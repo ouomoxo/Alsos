@@ -3,52 +3,18 @@
   "seed": "alsos-hero-v1",
   "generatedBy": "scripts/generate-hero-assets.mjs",
   "skeleton": "/assets/hero/tree-skeleton.json",
-  "og": "/assets/hero/og-image-1200x630.jpg",
+  "og": "/assets/hero/og-image-1200x630.png",
   "compositions": [
     {
       "id": "desktop-ultrawide",
       "media": "(min-width: 1600px)",
-      "width": 3200,
-      "height": 1400,
+      "width": 960,
+      "height": 420,
       "poster": {
-        "avif": [
-          {
-            "w": 1280,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1280.avif"
-          },
-          {
-            "w": 1920,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1920.avif"
-          },
-          {
-            "w": 2560,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-2560.avif"
-          },
-          {
-            "w": 3200,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.avif"
-          }
-        ],
-        "webp": [
-          {
-            "w": 1280,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1280.webp"
-          },
-          {
-            "w": 1920,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1920.webp"
-          },
-          {
-            "w": 2560,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-2560.webp"
-          },
-          {
-            "w": 3200,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.webp"
-          }
-        ]
+        "png": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.png",
+        "webp": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.webp"
       },
-      "lqip": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAwCdASoYAAsAPu1oqk6ppiQiMAgBMB2JYwAAWkgwxfucnLMO3QAA/vKrcu/ZJgE1ZtQTEIk979S+uWhUNu1ucC7oIAAA",
+      "lqip": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoQAAcAAsBMJZQAAxO54gKl0AD++mSp3mij7b+wc9X/ZDVq9djoK7mhgAA=",
       "palm": {
         "x": 0.575,
         "y": 0.735
@@ -66,55 +32,26 @@
         },
         {
           "edge": "right",
-          "extent": 0.15,
-          "strength": 0.6
+          "extent": 0.16,
+          "strength": 0.82
+        },
+        {
+          "edge": "top",
+          "extent": 0.16,
+          "strength": 0.62
         }
       ]
     },
     {
       "id": "desktop-standard",
       "media": "(min-width: 768px)",
-      "width": 2560,
-      "height": 1600,
+      "width": 800,
+      "height": 500,
       "poster": {
-        "avif": [
-          {
-            "w": 1024,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1024.avif"
-          },
-          {
-            "w": 1536,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1536.avif"
-          },
-          {
-            "w": 2048,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-2048.avif"
-          },
-          {
-            "w": 2560,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base.avif"
-          }
-        ],
-        "webp": [
-          {
-            "w": 1024,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1024.webp"
-          },
-          {
-            "w": 1536,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1536.webp"
-          },
-          {
-            "w": 2048,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-2048.webp"
-          },
-          {
-            "w": 2560,
-            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base.webp"
-          }
-        ]
+        "png": "/assets/hero/desktop-standard/hero-desktop-standard-base.png",
+        "webp": "/assets/hero/desktop-standard/hero-desktop-standard-base.webp"
       },
-      "lqip": "data:image/webp;base64,UklGRmAAAABXRUJQVlA4IFQAAABQAwCdASoYAA8APu1orU2ppqSiMAgBMB2JQAAjqQeeVrLvAAD+/hXGacDfROrJDclSzst5kcEMJY7nHpi0ekkUGGc85PIlV7M1OVEvQgpziB0MAAA=",
+      "lqip": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoQAAoAAsBMJYwAAiDsPmlyAAD++mVxiI9IwMAnnFegIfr3zishCEwTpsivb30BwAA=",
       "palm": {
         "x": 0.588,
         "y": 0.755
@@ -132,55 +69,26 @@
         },
         {
           "edge": "right",
-          "extent": 0.14,
-          "strength": 0.55
+          "extent": 0.15,
+          "strength": 0.8
+        },
+        {
+          "edge": "top",
+          "extent": 0.13,
+          "strength": 0.6
         }
       ]
     },
     {
       "id": "mobile-portrait",
       "media": "(max-width: 767px)",
-      "width": 1600,
-      "height": 2000,
+      "width": 360,
+      "height": 450,
       "poster": {
-        "avif": [
-          {
-            "w": 640,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-640.avif"
-          },
-          {
-            "w": 960,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-960.avif"
-          },
-          {
-            "w": 1280,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-1280.avif"
-          },
-          {
-            "w": 1600,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.avif"
-          }
-        ],
-        "webp": [
-          {
-            "w": 640,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-640.webp"
-          },
-          {
-            "w": 960,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-960.webp"
-          },
-          {
-            "w": 1280,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-1280.webp"
-          },
-          {
-            "w": 1600,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.webp"
-          }
-        ]
+        "png": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.png",
+        "webp": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.webp"
       },
-      "lqip": "data:image/webp;base64,UklGRmIAAABXRUJQVlA4IFYAAACwBACdASoYAB4APt1epE2opaOiN/qoARAbiUABRfwa9xsXQD6y/EJUr3h0oDdAAP70Msmi0jcz/p9ZA+arvTJvAbewZgofiQWX3mJva+MdjOswv9mQAA==",
+      "lqip": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAABwAwCdASoQABQAPtFUo0uoJKMhsAgBABoJZQC7ABi9ILfw4AAA/vQnS2u1Q3lyZGpr20K4Ucy8Hyh9WSkRQQWdfvrmuAQ83RoplAAA",
       "palm": {
         "x": 0.5,
         "y": 0.535
@@ -195,6 +103,11 @@
           "edge": "bottom",
           "extent": 0.58,
           "strength": 0.9
+        },
+        {
+          "edge": "top",
+          "extent": 0.1,
+          "strength": 0.55
         }
       ]
     }

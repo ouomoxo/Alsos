@@ -28,6 +28,7 @@ uniform float uScale;
 uniform float uDpr;
 uniform float uNoiseStrength;
 uniform float uSizeScale;
+uniform float uCell;
 uniform float uOpacity;
 uniform vec2 uPointer;
 uniform float uPointerRadius;
@@ -76,10 +77,15 @@ void main() {
     }
   }
 
+  // Snap to the poster's pixel grid and size in whole cells. The particle
+  // layer sits directly on top of pixel art; a sub-pixel, smoothly-sized point
+  // would read as a different material and give the composite a soft halo.
+  pos = floor(pos / uCell) * uCell + uCell * 0.5;
+
   gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 0.0, 1.0);
 
-  // Particles pop in slightly small and settle — germination, not a fade.
-  gl_PointSize = aSize * uSizeScale * uDpr * (0.55 + 0.45 * reveal);
+  float cells = aSize > 1.9 ? 2.0 : 1.0;
+  gl_PointSize = max(1.0, floor(cells * uCell * uSizeScale)) * uDpr;
 
   vAlpha = reveal * aBrightness * uOpacity;
   vTone = aBirth;
@@ -96,14 +102,9 @@ varying float vAlpha;
 varying float vTone;
 
 void main() {
-  // Round the point sprite and give it a soft shoulder. Square particles read
-  // as pixels; these need to read as spores.
-  vec2 d = gl_PointCoord - 0.5;
-  float r2 = dot(d, d);
-  if (r2 > 0.25) discard;
-  float falloff = 1.0 - smoothstep(0.02, 0.25, r2);
-
+  // Square, flat, no shoulder. A round sprite with a soft falloff is exactly
+  // what made the first pass read as smooth vector art rather than pixel art.
   vec3 color = mix(uColorCore, uColorTip, vTone);
-  gl_FragColor = vec4(color, vAlpha * falloff);
+  gl_FragColor = vec4(color, vAlpha);
 }
 `;

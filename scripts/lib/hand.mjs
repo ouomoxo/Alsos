@@ -101,27 +101,33 @@ export function drawHand(raster, opts) {
         const ll = Math.hypot(toLightX, toLightY) || 1;
         const facing = clamp01((nx * side * toLightX + ny * side * toLightY) / ll);
 
-        // Rim: a thin bright lip on the silhouette that faces the glow — this
-        // is what separates individual fingers without any outline stroke.
-        // Measured in pixels inward from the edge, never as a fraction of the
-        // width, or a thin finger becomes rim all the way through and the hand
-        // reads as lit rubber instead of a shadow.
-        const w = rw0 + (rw1 - rw0) * t;
-        const into = Math.max(0, w - dist);
-        const rimPx = Math.max(1.0, scale * 0.005);
-        const rim = Math.exp(-into / rimPx) * Math.pow(facing, 2.6) * 0.55;
-        // Barely-there wrap so the mass is not a dead black hole.
-        const wrap = Math.pow(edge, 1.4) * facing * 0.008;
-        const shade = kind === "finger" ? 1 : 0.7;
+        // Diffuse shading only — no edge-distance term anywhere.
+        //
+        // An exponential rim measured inward from the silhouette traces the
+        // outline of every bone, and once the palette pass runs that trace
+        // survives as a clean curved line: the hand reads as line art. The
+        // reference has no outline at all. Form comes from a broad Lambert
+        // term across each rounded bone, which the dither then breaks into a
+        // density of lit dots.
+        const lambert = Math.pow(facing, 1.6);
+        // Curvature: the middle of a finger turns toward the viewer, the sides
+        // fall away. This is what separates adjacent fingers.
+        const round = Math.pow(edge, 0.55);
+        const shade = kind === "finger" ? 1 : 0.72;
 
         // Bounce from the tree, falling off fast so it stays on the palm and
         // never becomes general illumination across the whole hand.
         const bd = Math.hypot(px - bounce.x, py - bounce.y) / bounce.radius;
-        const bounceAmt = bd < 1 ? Math.pow(1 - bd, 4.5) * bounce.strength : 0;
+        const bounceAmt = bd < 1 ? Math.pow(1 - bd, 3.2) * bounce.strength : 0;
 
-        const r = skin[0] * wrap * shade + rimColor[0] * rim + bounce.color[0] * bounceAmt;
-        const g = skin[1] * wrap * shade + rimColor[1] * rim + bounce.color[1] * bounceAmt;
-        const bl = skin[2] * wrap * shade + rimColor[2] * rim + bounce.color[2] * bounceAmt;
+        // The hand is a shadow the light falls across, so it must sit *below*
+        // the forest midtone everywhere except where the tree's own glow lands
+        // on the palm. A constant fill anywhere near the background value makes
+        // it read as a pale sculpture instead of a silhouette.
+        const lit = lambert * round * shade * 0.04;
+        const r = skin[0] * 0.05 + rimColor[0] * lit + bounce.color[0] * bounceAmt * round;
+        const g = skin[1] * 0.05 + rimColor[1] * lit + bounce.color[1] * bounceAmt * round;
+        const bl = skin[2] * 0.05 + rimColor[2] * lit + bounce.color[2] * bounceAmt * round;
 
         // Alpha 1: the hand is opaque and occludes everything behind it.
         return [r, g, bl, 1];

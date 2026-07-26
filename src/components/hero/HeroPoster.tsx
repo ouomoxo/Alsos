@@ -1,4 +1,4 @@
-import { compositionById, heroCompositions, srcSet } from "@/lib/hero/manifest";
+import { compositionById, heroCompositions } from "@/lib/hero/manifest";
 import styles from "./HeroPoster.module.css";
 
 /**
@@ -15,29 +15,16 @@ export function HeroPoster() {
   // The standard desktop frame is the <img> fallback: it is the composition
   // that degrades most gracefully if a browser ignores every <source>.
   const fallback = compositionById("desktop-standard");
-  const fallbackSrc = fallback.poster.webp.at(-1)?.src;
 
   return (
     <div className={styles.poster} aria-hidden="true">
       <picture>
         {heroCompositions.map((comp) => (
           <source
-            key={`${comp.id}-avif`}
-            media={comp.media}
-            type="image/avif"
-            srcSet={srcSet(comp.poster.avif)}
-            sizes="100vw"
-            width={comp.width}
-            height={comp.height}
-          />
-        ))}
-        {heroCompositions.map((comp) => (
-          <source
-            key={`${comp.id}-webp`}
+            key={comp.id}
             media={comp.media}
             type="image/webp"
-            srcSet={srcSet(comp.poster.webp)}
-            sizes="100vw"
+            srcSet={comp.poster.webp}
             width={comp.width}
             height={comp.height}
           />
@@ -45,9 +32,7 @@ export function HeroPoster() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={styles.image}
-          src={fallbackSrc}
-          srcSet={srcSet(fallback.poster.webp)}
-          sizes="100vw"
+          src={fallback.poster.png}
           width={fallback.width}
           height={fallback.height}
           alt=""

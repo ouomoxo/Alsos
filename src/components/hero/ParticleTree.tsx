@@ -83,6 +83,7 @@ export function ParticleTree({
       uDpr: { value: 1 },
       uNoiseStrength: { value: 0.004 },
       uSizeScale: { value: 1 },
+      uCell: { value: 1 },
       uOpacity: { value: 1 },
       uPointer: { value: new THREE.Vector2(-1, -1) },
       uPointerRadius: { value: 110 },
@@ -118,6 +119,8 @@ export function ParticleTree({
     const palmImageY = composition.palm.y * composition.height;
 
     return {
+      // One art pixel, in CSS pixels. Particles snap to this grid.
+      cell: cover,
       originX: offsetX + palmImageX * cover,
       originY: offsetY + palmImageY * cover,
       // Tree-local units -> screen pixels, matching drawTree() in the generator.
@@ -132,7 +135,8 @@ export function ParticleTree({
     // Point sprites are sized in device pixels.
     uniforms.uDpr.value = Math.min(gl.getPixelRatio(), 1.5);
     // Keep dots the same physical size regardless of the art's cover scale.
-    uniforms.uSizeScale.value = Math.max(0.75, layout.scale / 900);
+    uniforms.uCell.value = Math.max(1, Math.round(layout.cell));
+    uniforms.uSizeScale.value = 1;
     uniforms.uNoiseStrength.value = frozen ? 0 : 0.004;
     uniforms.uPointerStrength.value = pointerEnabled ? 6 : 0;
   }, [layout, size.height, gl, uniforms, frozen, pointerEnabled]);

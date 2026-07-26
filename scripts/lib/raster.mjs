@@ -1,4 +1,4 @@
-import { clamp01, segmentDistance, smoothstep } from "./rng.mjs";
+import { clamp, clamp01, segmentDistance, smoothstep } from "./rng.mjs";
 
 /**
  * Minimal float RGB raster with a companion depth channel.
@@ -87,7 +87,8 @@ export class Raster {
  * 0 at the silhouette and 1 at the spine.
  */
 export function drawCapsule(raster, x0, y0, x1, y1, w0, w1, shade, opts = {}) {
-  const { depth, mask, feather = 1.0 } = opts;
+  // feather 0 by default: pixel art has no partial coverage.
+  const { depth, mask, feather = 0 } = opts;
   const maxW = Math.max(w0, w1) + feather + 1;
   const minX = Math.max(0, Math.floor(Math.min(x0, x1) - maxW));
   const maxX = Math.min(raster.width - 1, Math.ceil(Math.max(x0, x1) + maxW));
@@ -99,7 +100,7 @@ export function drawCapsule(raster, x0, y0, x1, y1, w0, w1, shade, opts = {}) {
       const { dist, t } = segmentDistance(x + 0.5, y + 0.5, x0, y0, x1, y1);
       const w = w0 + (w1 - w0) * t;
       if (dist > w + feather) continue;
-      const coverage = 1 - smoothstep(w - feather, w + feather, dist);
+      const coverage = feather > 0 ? 1 - smoothstep(w - feather, w + feather, dist) : 1;
       if (coverage <= 0.002) continue;
       const edge = w > 0 ? clamp01(1 - dist / w) : 1;
       const c = shade(t, edge, dist, x, y);
@@ -109,24 +110,85 @@ export function drawCapsule(raster, x0, y0, x1, y1, w0, w1, shade, opts = {}) {
   }
 }
 
-/** Soft round splat — used for spores, foliage grain and particle dots. */
-export function splat(raster, cx, cy, radius, r, g, b, intensity, maskName) {
-  const minX = Math.max(0, Math.floor(cx - radius));
-  const maxX = Math.min(raster.width - 1, Math.ceil(cx + radius));
-  const minY = Math.max(0, Math.floor(cy - radius));
-  const maxY = Math.min(raster.height - 1, Math.ceil(cy + radius));
-  const r2 = radius * radius;
+/**
+ * Rasterise a whole tapered polyline in one pass.
+ *
+ * Drawing a chain of capsules one at a time double-composites wherever two
+ * segments overlap at a joint. With semi-transparent wood that stacks into a
+ * visible band at every seam and a tree turns into bamboo. Here each pixel
+ * resolves its nearest point across the entire chain first, then blends once.
+ *
+ * @param {Array<{x:number,y:number,w:number}>} points spine, with half-widths
+ */
+export function drawPolyline(raster, points, shade, opts = {}) {
+  const { depth, mask } = opts;
+  if (points.length < 2) return;
+
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const p of points) {
+    minX = Math.min(minX, p.x - p.w - 1);
+    maxX = Math.max(maxX, p.x + p.w + 1);
+    minY = Math.min(minY, p.y - p.w - 1);
+    maxY = Math.max(maxY, p.y + p.w + 1);
+  }
+  minX = Math.max(0, Math.floor(minX));
+  minY = Math.max(0, Math.floor(minY));
+  maxX = Math.min(raster.width - 1, Math.ceil(maxX));
+  maxY = Math.min(raster.height - 1, Math.ceil(maxY));
+
   for (let y = minY; y <= maxY; y++) {
     for (let x = minX; x <= maxX; x++) {
-      const dx = x + 0.5 - cx;
-      const dy = y + 0.5 - cy;
-      const d2 = dx * dx + dy * dy;
-      if (d2 > r2) continue;
-      const falloff = 1 - Math.sqrt(d2) / radius;
-      raster.add(x, y, r, g, b, intensity * falloff * falloff, maskName);
+      const px = x + 0.5;
+      const py = y + 0.5;
+      let best = Infinity;
+      let bestW = 0;
+      let bestT = 0;
+
+      for (let i = 0; i < points.length - 1; i++) {
+        const a = points[i];
+        const b = points[i + 1];
+        const { dist, t } = segmentDistance(px, py, a.x, a.y, b.x, b.y);
+        if (dist < best) {
+          best = dist;
+          bestW = a.w + (b.w - a.w) * t;
+          bestT = (i + t) / (points.length - 1);
+        }
+      }
+
+      if (best > bestW) continue;
+      const edge = bestW > 0 ? clamp01(1 - best / bestW) : 1;
+      const c = shade(bestT, edge, best, x, y, bestW);
+      if (!c) continue;
+      raster.blend(x, y, c[0], c[1], c[2], c[3], depth, mask);
     }
   }
 }
+
+/**
+ * A dot.
+ *
+ * This is pixel art: a particle is one square cell on the grid, not a soft
+ * radial sprite. Sub-pixel falloff is what turned the first pass into smooth
+ * vector-looking artwork instead of the reference's dithered dot field, so
+ * there is deliberately no anti-aliasing here — the coordinates snap and the
+ * cell is filled flat.
+ */
+export function dot(raster, cx, cy, size, r, g, b, intensity, maskName) {
+  const x0 = Math.round(cx - size / 2);
+  const y0 = Math.round(cy - size / 2);
+  for (let y = y0; y < y0 + size; y++) {
+    for (let x = x0; x < x0 + size; x++) {
+      raster.add(x, y, r, g, b, intensity, maskName);
+    }
+  }
+}
+
+/** Back-compat alias so callers reading as "splat" still land on a hard dot. */
+export const splat = (raster, cx, cy, radius, r, g, b, intensity, maskName) =>
+  dot(raster, cx, cy, Math.max(1, Math.round(radius)), r, g, b, intensity, maskName);
 
 /* --------------------------------------------------------------- output -- */
 
@@ -149,6 +211,59 @@ const BAYER8 = [
  * same material as the WebGL point cloud layered on top of it. `strengthAt`
  * lets the caller pull the dither back over the text safe area (§13.3).
  */
+/**
+ * Quantise the frame to a fixed colour ramp with ordered dithering.
+ *
+ * This is the whole look. The reference is not a photograph with grain on top —
+ * it is a limited palette where every intermediate tone is produced by mixing
+ * two adjacent ramp entries in a Bayer pattern. Tones resolve into visible
+ * dot texture in the shadows and into flat colour in the highlights, which is
+ * exactly what makes hand, forest and tree read as one material (§2.3).
+ *
+ * The ramp is monotonic in luminance, so a pixel's position along it is a
+ * single scalar; dithering happens on that scalar, then we snap to a real ramp
+ * colour. Nothing off-palette survives.
+ *
+ * @param {number[][]} ramp linear-RGB colours, dark to bright
+ */
+export function quantiseToRamp(raster, ramp, { strengthAt } = {}) {
+  const { width, height, data } = raster;
+  const lum = ramp.map((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
+  const last = ramp.length - 1;
+
+  /** Position along the ramp as a continuous index. */
+  const rampIndex = (l) => {
+    if (l <= lum[0]) return 0;
+    if (l >= lum[last]) return last;
+    let i = 0;
+    while (i < last && lum[i + 1] < l) i++;
+    const span = lum[i + 1] - lum[i];
+    return i + (span > 1e-9 ? (l - lum[i]) / span : 0);
+  };
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 3;
+      const l = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+      const f = rampIndex(clamp01(l));
+
+      // Bayer threshold at one art pixel per cell — the grid is the art.
+      const threshold = (BAYER8[y & 7][x & 7] + 0.5) / 64;
+      const strength = strengthAt ? strengthAt(x, y) : 1;
+      const index = clamp(
+        Math.floor(f + (threshold - 0.5) * strength + 0.5),
+        0,
+        last,
+      );
+
+      const c = ramp[index];
+      data[i] = c[0];
+      data[i + 1] = c[1];
+      data[i + 2] = c[2];
+    }
+  }
+}
+
 export function ditherQuantise(raster, { cell = 2, levels = 14, strengthAt, stochastic = 0.55 }) {
   const { width, height, data } = raster;
 

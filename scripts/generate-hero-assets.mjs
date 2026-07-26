@@ -26,8 +26,10 @@ import { generateTree, serializeTree } from "./lib/tree.mjs";
 import {
   Raster,
   drawCapsule,
+  drawPolyline,
+  dot,
   splat,
-  ditherQuantise,
+  quantiseToRamp,
   toRGBA8,
   maskToGray8,
   depthToGray16,
@@ -63,6 +65,20 @@ const PALETTE = {
   sporeBright: hexToLinear("#e5e98d"),
 };
 
+/**
+ * The palette. Every pixel in the finished art is one of these sixteen values.
+ *
+ * Ordered dithering between adjacent entries produces every intermediate tone,
+ * which is what gives the artwork its dot texture — the same way the reference
+ * is built. A continuous-tone render with grain on top does not read as this,
+ * no matter how it is tuned.
+ */
+const RAMP = [
+  "#050706", "#070908", "#0a0d0a", "#0e130e", "#131a12", "#182116",
+  "#1f2a1a", "#28351e", "#334124", "#41512a", "#526333", "#68743c",
+  "#8b9a4d", "#aeb760", "#cbd270", "#e8ec96",
+].map(hexToLinear);
+
 /* -------------------------------------------------------- compositions --- */
 
 /**
@@ -73,8 +89,8 @@ const PALETTE = {
 const COMPOSITIONS = [
   {
     id: "desktop-ultrawide",
-    width: 3200,
-    height: 1400,
+    width: 960,
+    height: 420,
     media: "(min-width: 1600px)",
     light: { x: 0.552, y: -0.06 },
     palm: { x: 0.575, y: 0.735 },
@@ -86,13 +102,14 @@ const COMPOSITIONS = [
     /** Regions kept dark and low-noise for DOM text. */
     safe: [
       { edge: "left", extent: 0.47, strength: 0.93 },
-      { edge: "right", extent: 0.15, strength: 0.6 },
+      { edge: "right", extent: 0.16, strength: 0.82 },
+      { edge: "top", extent: 0.16, strength: 0.62 },
     ],
   },
   {
     id: "desktop-standard",
-    width: 2560,
-    height: 1600,
+    width: 800,
+    height: 500,
     media: "(min-width: 768px)",
     light: { x: 0.565, y: -0.05 },
     palm: { x: 0.588, y: 0.755 },
@@ -103,13 +120,14 @@ const COMPOSITIONS = [
     atmosphere: 0.95,
     safe: [
       { edge: "left", extent: 0.5, strength: 0.92 },
-      { edge: "right", extent: 0.14, strength: 0.55 },
+      { edge: "right", extent: 0.15, strength: 0.8 },
+      { edge: "top", extent: 0.13, strength: 0.6 },
     ],
   },
   {
     id: "mobile-portrait",
-    width: 1600,
-    height: 2000,
+    width: 360,
+    height: 450,
     media: "(max-width: 767px)",
     light: { x: 0.5, y: -0.03 },
     // Tree sits in the upper third; the copy owns the bottom of the frame.
@@ -119,7 +137,10 @@ const COMPOSITIONS = [
     handRotation: 0,
     trunks: 95,
     atmosphere: 0.72,
-    safe: [{ edge: "bottom", extent: 0.58, strength: 0.9 }],
+    safe: [
+      { edge: "bottom", extent: 0.58, strength: 0.9 },
+      { edge: "top", extent: 0.1, strength: 0.55 },
+    ],
   },
 ];
 
@@ -178,7 +199,7 @@ function drawForest(raster, comp, rng, fbm) {
     // of verticals into depth.
     const baseY = H * lerp(0.70, 1.16, d) + gaussian(rng, 0, H * 0.015);
     const topY = baseY - H * lerp(0.5, 2.0, Math.pow(d, 0.8));
-    const width = W * lerp(0.0012, 0.013, Math.pow(d, 2.1));
+    const width = W * lerp(0.0022, 0.016, Math.pow(d, 1.9));
     const lean = gaussian(rng, 0, 0.035);
 
     // Atmospheric perspective: distance lifts the wood toward the lit air
@@ -194,54 +215,54 @@ function drawForest(raster, comp, rng, fbm) {
       lerp(PALETTE.void[2], PALETTE.mossDeep[2], 0.25),
     ];
     const opacity = lerp(0.22, 1, Math.pow(d, 0.65));
-    const rimGain = lerp(0.14, 0.62, haze) * lerp(0.3, 1.3, towardLight);
+    const rimGain = lerp(0.2, 0.9, haze) * lerp(0.35, 1.5, towardLight);
     const layerDepth = 0.08 + d * 0.6;
     const layerMask = d > 0.72 ? "foreground" : "background";
 
+    // Build the whole spine first, then rasterise it in a single pass. Drawing
+    // segment-by-segment double-composites the semi-transparent wood at every
+    // joint, which stacks into regular horizontal bands — the trunks come out
+    // looking like bamboo instead of trees.
     const steps = 10;
-    let px = x;
-    let py = baseY;
     const span = baseY - topY;
-    for (let s = 0; s < steps; s++) {
-      const t0 = s / steps;
-      const t1 = (s + 1) / steps;
-      // Sway is proportional to height climbed, so trunks bend rather than kink.
-      const nx = x + lean * span * t1 + Math.sin(t1 * 2.4 + u * 17) * width * 1.6;
-      const ny = lerp(baseY, topY, t1);
-      // Strong taper — a tree is a cone, a slab is a building.
-      const w0 = width * lerp(1, 0.22, Math.pow(t0, 0.75));
-      const w1 = width * lerp(1, 0.22, Math.pow(t1, 0.75));
-      drawCapsule(
-        raster,
-        px,
-        py,
-        nx,
-        ny,
-        w0,
-        w1,
-        (t, edge, dist, sx, sy) => {
-          const bark = 0.7 + 0.3 * fbm(sx * 0.05, sy * 0.008);
-          // Edge light only on the side actually turned toward the source.
-          const facing = sx < lightPx.x ? 0.3 : 1;
-          // Rim measured in *pixels* inward from the silhouette. Normalised
-          // edge would make every thin far trunk 100% rim, turning the forest
-          // into a field of glowing wires.
-          const w = w0 + (w1 - w0) * t;
-          const into = Math.max(0, w - dist);
-          const rimPx = Math.max(1.1, w * 0.3);
-          const rim = Math.exp(-into / rimPx) * facing * rimGain;
-          return [
-            wood[0] * bark + PALETTE.lichen[0] * rim * 0.5,
-            wood[1] * bark + PALETTE.lichen[1] * rim * 0.5,
-            wood[2] * bark + PALETTE.lichen[2] * rim * 0.35,
-            opacity,
-          ];
-        },
-        { depth: layerDepth, mask: layerMask },
-      );
-      px = nx;
-      py = ny;
+    const spine = [];
+    for (let s = 0; s <= steps; s++) {
+      const t = s / steps;
+      spine.push({
+        // Sway is proportional to height climbed, so trunks bend, not kink.
+        x: x + lean * span * t + Math.sin(t * 2.4 + u * 17) * width * 1.6,
+        y: lerp(baseY, topY, t),
+        // Strong taper — a tree is a cone, a slab is a building.
+        w: width * lerp(1, 0.22, Math.pow(t, 0.75)),
+      });
     }
+    const tip = spine[spine.length - 1];
+
+    drawPolyline(
+      raster,
+      spine,
+      (t, edge, dist, sx, sy, w) => {
+        const bark = 0.7 + 0.3 * fbm(sx * 0.05, sy * 0.008);
+        // Edge light only on the side actually turned toward the source.
+        const facing = sx < lightPx.x ? 0.3 : 1;
+        // Rim measured in *pixels* inward from the silhouette. Normalised edge
+        // would make every thin far trunk 100% rim, turning the forest into a
+        // field of glowing wires.
+        const into = Math.max(0, w - dist);
+        const rimPx = Math.max(1.1, w * 0.3);
+        const rim = Math.exp(-into / rimPx) * facing * rimGain;
+        return [
+          wood[0] * bark + PALETTE.lichen[0] * rim * 0.5,
+          wood[1] * bark + PALETTE.lichen[1] * rim * 0.5,
+          wood[2] * bark + PALETTE.lichen[2] * rim * 0.35,
+          opacity,
+        ];
+      },
+      { depth: layerDepth, mask: layerMask },
+    );
+
+    const px = tip.x;
+    const py = tip.y;
 
     // Limbs, only on the near half and only thin ones — they break the
     // verticals without reading as scaffolding.
@@ -282,7 +303,7 @@ function drawForest(raster, comp, rng, fbm) {
 /** Canopy foliage: fbm-driven leaf mass, lit only where it faces the source. */
 function drawCanopy(raster, comp, rng, fbm) {
   const { width: W, height: H } = comp;
-  const count = Math.round((W * H) / 5200);
+  const count = Math.round((W * H) / 26);
   for (let i = 0; i < count; i++) {
     const u = rng();
     const v = Math.pow(rng(), 1.6) * 0.68;
@@ -297,14 +318,14 @@ function drawCanopy(raster, comp, rng, fbm) {
     const lit = Math.pow(clamp01(1 - distLight * 1.15), 2.4);
     if (lit < 0.02 && density < 0.6) continue;
 
-    const size = lerp(1.2, 4.2, rng()) * (W / 3200);
+    const size = rng() < 0.25 ? 2 : 1;
     const glow = lit * lerp(0.35, 1, density);
     const c = lit > 0.35 ? PALETTE.lichen : PALETTE.mossDeep;
     splat(
       raster,
       x,
       y,
-      Math.max(1, size),
+      size,
       c[0],
       c[1],
       c[2],
@@ -361,7 +382,7 @@ function drawFloor(raster, comp, rng) {
     ];
   });
 
-  const motes = Math.round((W * H) / 26000);
+  const motes = Math.round((W * H) / 900);
   for (let i = 0; i < motes; i++) {
     const u = rng();
     const v = lerp(0.62, 1.0, Math.pow(rng(), 0.7));
@@ -370,7 +391,7 @@ function drawFloor(raster, comp, rng) {
     const towardLight = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 1.8), 2);
     const a = towardLight * lerp(0.05, 0.55, rng()) * (1 - Math.pow(v, 3));
     if (a <= 0.01) continue;
-    splat(raster, x, y, lerp(1, 2.6, rng()) * (W / 3200), PALETTE.lichen[0], PALETTE.lichen[1], PALETTE.lichen[2], a, "spore");
+    splat(raster, x, y, 1, PALETTE.lichen[0], PALETTE.lichen[1], PALETTE.lichen[2], a, "spore");
   }
 }
 
@@ -414,8 +435,6 @@ function drawTree(raster, comp, tree, rng, samples) {
     return lo;
   };
 
-  const dotScale = W / 3200;
-
   for (let i = 0; i < samples; i++) {
     const seg = tree.segments[pick(rng())];
     const t = rng();
@@ -434,15 +453,14 @@ function drawTree(raster, comp, tree, rng, samples) {
     const brightness = lerp(0.2, 1.35, core) * lerp(1.0, 0.5, birth) * lerp(0.6, 1.2, rng());
     const c = birth < 0.4 ? PALETTE.sporeBright : PALETTE.spore;
     // Dot grammar: mostly 1-2px spores, occasional 4px node at a junction.
-    const isNode = core > 0.8 && rng() < 0.05;
-    const radius = (isNode ? 2.0 : lerp(0.55, 1.35, core)) * dotScale * (seg.isRoot ? 0.85 : 1);
-    splat(raster, p.x, p.y, Math.max(0.7, radius), c[0], c[1], c[2], brightness * 0.42, "tree");
+    const isNode = core > 0.62 && rng() < 0.16;
+    dot(raster, p.x, p.y, isNode ? 2 : 1, c[0], c[1], c[2], brightness * 0.5, "tree");
   }
 
   // Foliage clusters — leaves and the spores drifting off them. The canopy
   // carries most of the tree's particle budget: branches are the drawing, but
   // the crown is what makes it read as alive rather than as a bare winter twig.
-  const foliageBudget = Math.round(samples * 4.5);
+  const foliageBudget = Math.round(samples * 3.2);
   const densityTotal = tree.clusters.reduce((a, c) => a + c.density, 0) || 1;
   for (const cl of tree.clusters) {
     const n = Math.round((foliageBudget * cl.density) / densityTotal);
@@ -454,17 +472,7 @@ function drawTree(raster, comp, tree, rng, samples) {
       const p = toPx(cl.x + Math.cos(ang) * rad, cl.y + Math.sin(ang) * rad * 0.8);
       const falloff = clamp01(1 - rad / (cl.r * 1.35));
       const a = Math.pow(falloff, 1.1) * lerp(0.2, 0.9, rng()) * cl.density;
-      splat(
-        raster,
-        p.x,
-        p.y,
-        lerp(0.6, 1.5, rng()) * dotScale,
-        PALETTE.spore[0],
-        PALETTE.spore[1],
-        PALETTE.spore[2],
-        a * 0.24,
-        "tree",
-      );
+      dot(raster, p.x, p.y, 1, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.4, "tree");
     }
   }
 
@@ -493,14 +501,14 @@ function drawAmbientSpores(raster, comp, rng) {
       const x = cx + gaussian(rng, 0, spread);
       const y = cy + gaussian(rng, 0, spread * 0.8);
       const a = lerp(0.08, 0.6, Math.pow(rng(), 1.8));
-      splat(raster, x, y, lerp(0.8, 1.8, rng()) * (W / 3200), PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.5, "spore");
+      splat(raster, x, y, 1, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.5, "spore");
     }
   }
 }
 
 /* ----------------------------------------------------------------- post --- */
 
-function postProcess(raster, comp, fbm, rng) {
+function postProcess(raster, comp) {
   const { width: W, height: H } = comp;
 
   // Vignette + text safe-area gradient, both multiplicative on the artwork.
@@ -513,21 +521,12 @@ function postProcess(raster, comp, fbm, rng) {
     return [data[i] * k, data[i + 1] * k, data[i + 2] * k];
   });
 
-  // Film grain, pulled back over the safe areas so text sits on clean ground.
-  raster.forEach((x, y, i, data) => {
-    const clean = 1 - safeMultiplier(comp, x, y);
-    const g = (fbm(x * 0.9, y * 0.9) - 0.5) * 0.022 * clean;
-    return [
-      clamp01(data[i] + g),
-      clamp01(data[i + 1] + g),
-      clamp01(data[i + 2] + g),
-    ];
-  });
-
-  ditherQuantise(raster, {
-    cell: Math.max(2, Math.round(W / 1600)),
-    levels: 13,
-    strengthAt: (x, y) => 1 - safeMultiplier(comp, x, y) * 0.85,
+  // The palette pass. No film grain: the dither pattern *is* the texture, and
+  // adding noise on top only muddies a sixteen-colour image.
+  quantiseToRamp(raster, RAMP, {
+    // Pull the dither back a little over the copy columns so the pattern does
+    // not fight the headline (§13.3), without flattening it into a black plate.
+    strengthAt: (x, y) => 1 - safeMultiplier(comp, x, y) * 0.35,
   });
 }
 
@@ -570,7 +569,6 @@ async function renderComposition(comp) {
   const { width: W, height: H } = comp;
   const rng = makeRng(`${SEED}:${comp.id}`);
   const fbm = makeFbm2D(`${SEED}:fbm:${comp.id}`, 5);
-  const grainFbm = makeFbm2D(`${SEED}:grain:${comp.id}`, 2);
   const raster = new Raster(W, H);
 
   // 1. Atmosphere — the dark is layered, never one flat black (§2.1).
@@ -582,7 +580,7 @@ async function renderComposition(comp) {
     // olive wash. Everything outside it stays genuinely dark (§2.1).
     const glow = Math.pow(clamp01(1 - dl * 1.15), 3.6);
     const vertical = Math.pow(1 - clamp01(v), 2.2);
-    const k = (glow * 0.85 + vertical * 0.08) * 0.72 * (comp.atmosphere ?? 1);
+    const k = (glow * 0.95 + vertical * 0.1) * 0.85 * (comp.atmosphere ?? 1);
     return [
       lerp(PALETTE.void[0], PALETTE.mossDeep[0], k) + glow * 0.035,
       lerp(PALETTE.void[1], PALETTE.mossDeep[1], k * 1.05) + glow * 0.045,
@@ -612,30 +610,30 @@ async function renderComposition(comp) {
       y: comp.palm.y * H,
       radius: handScalePx * 0.72,
       color: PALETTE.spore,
-      strength: 0.34,
+      strength: 0.42,
     },
   };
   drawHand(raster, handOpts);
-  for (const s of handSporeField(raster, handOpts, rng, Math.round((W * H) / 3400))) {
+  for (const s of handSporeField(raster, handOpts, rng, Math.round((W * H) / 260))) {
     splat(
       raster,
       s.x,
       s.y,
-      lerp(0.8, 1.9, rng()) * (W / 3200),
+      1,
       PALETTE.lichen[0],
       PALETTE.lichen[1],
       PALETTE.lichen[2],
-      Math.pow(s.falloff, 2) * 0.34,
+      Math.pow(s.falloff, 1.6) * 0.5,
       "spore",
     );
   }
 
   // 9. The tree, drawn from the same skeleton the browser will animate.
   const tree = generateTree({ seed: SEED });
-  const placement = drawTree(raster, comp, tree, rng, Math.round((W * H) / 11));
+  const placement = drawTree(raster, comp, tree, rng, Math.round((W * H) / 20));
 
   // 10. Post.
-  postProcess(raster, comp, grainFbm, rng);
+  postProcess(raster, comp);
 
   const rgba = toRGBA8(raster, { exposure: 0.98 });
   const occlusion = buildOcclusion(raster);
@@ -655,30 +653,29 @@ async function writeComposition(comp, result) {
   const posterName = `hero-${comp.id}-base`;
 
   /**
-   * Responsive widths. Serving the native 3200px frame to a 1440px laptop is
-   * the fastest way to lose the LCP budget in §16, so every composition ships a
-   * ladder and the browser picks off the srcset.
+   * Shipped at native pixel-art resolution — no responsive ladder.
+   *
+   * Two reasons. Lossy codecs are wrong here: AVIF/WebP quality settings smear
+   * the hard cell edges and invent colours outside the sixteen-entry ramp, and
+   * the whole look is those edges. And a downscale ladder is pointless when the
+   * source is already ~400 KB of pixels; the browser upscales this with
+   * `image-rendering: pixelated`, which keeps every art pixel a crisp square at
+   * any viewport size and costs nothing.
+   *
+   * PNG with a palette is the natural container for a 16-colour image and comes
+   * out an order of magnitude smaller than the old lossy ladder.
    */
-  const widths = [0.4, 0.6, 0.8, 1].map((f) => Math.round((W * f) / 2) * 2);
-  const avif = [];
-  const webp = [];
+  await base.clone().png({ compressionLevel: 9, palette: true, colours: 16 }).toFile(path.join(dir, `${posterName}.png`));
+  await base.clone().webp({ lossless: true, effort: 6 }).toFile(path.join(dir, `${posterName}.webp`));
 
-  for (const w of widths) {
-    const suffix = w === W ? "" : `-${w}`;
-    const scaled = w === W ? base.clone() : base.clone().resize(w);
-    const avifPath = path.join(dir, `${posterName}${suffix}.avif`);
-    const webpPath = path.join(dir, `${posterName}${suffix}.webp`);
-    await scaled.clone().avif({ quality: 58, effort: 5, chromaSubsampling: "4:2:0" }).toFile(avifPath);
-    await scaled.clone().webp({ quality: 80, effort: 6 }).toFile(webpPath);
-    avif.push({ w, src: `/assets/hero/${comp.id}/${posterName}${suffix}.avif` });
-    webp.push({ w, src: `/assets/hero/${comp.id}/${posterName}${suffix}.webp` });
-  }
+  const png = `/assets/hero/${comp.id}/${posterName}.png`;
+  const webp = `/assets/hero/${comp.id}/${posterName}.webp`;
 
-  // LQIP: a 24px blur that inlines as a data URI so the frame is never white.
+  // LQIP: a few pixels wide, inlined so the frame is never empty.
   const lqip = await base
     .clone()
-    .resize(24, Math.max(1, Math.round((24 * H) / W)))
-    .webp({ quality: 40 })
+    .resize(16, Math.max(1, Math.round((16 * H) / W)))
+    .webp({ quality: 50 })
     .toBuffer();
 
   const masks = {
@@ -712,7 +709,7 @@ async function writeComposition(comp, result) {
     media: comp.media,
     width: W,
     height: H,
-    poster: { avif, webp },
+    poster: { png, webp },
     lqip: `data:image/webp;base64,${lqip.toString("base64")}`,
     /** Normalised anchor the WebGL layer aligns its point cloud to. */
     palm: comp.palm,
@@ -767,25 +764,26 @@ async function main() {
     return;
   }
 
-  // A small square crop of the ultrawide frame, used for social cards.
+  // Social card: crop the ultrawide frame around the tree and upscale with
+  // nearest neighbour, so the card stays pixel art instead of a blurred resample.
   const og = COMPOSITIONS[0];
-  await sharp(path.join(OUT, og.id, `hero-${og.id}-base.webp`))
+  await sharp(path.join(OUT, og.id, `hero-${og.id}-base.png`))
     .extract({
       left: Math.round(og.width * 0.28),
       top: 0,
       width: Math.round(og.width * 0.52),
       height: og.height,
     })
-    .resize(1200, 630, { fit: "cover" })
-    .jpeg({ quality: 84 })
-    .toFile(path.join(OUT, "og-image-1200x630.jpg"));
+    .resize(1200, 630, { fit: "cover", kernel: "nearest" })
+    .png({ compressionLevel: 9, palette: true, colours: 16 })
+    .toFile(path.join(OUT, "og-image-1200x630.png"));
 
   const manifest = {
     version: 1,
     seed: SEED,
     generatedBy: "scripts/generate-hero-assets.mjs",
     skeleton: "/assets/hero/tree-skeleton.json",
-    og: "/assets/hero/og-image-1200x630.jpg",
+    og: "/assets/hero/og-image-1200x630.png",
     compositions: entries,
     /** Palette actually present in the artwork, mirrored by tokens.css. */
     palette: {

@@ -72,6 +72,7 @@ export function AmbientSpores({ composition, seed, frozen }: Props) {
         uTime: { value: 0 },
         uViewport: { value: new THREE.Vector2(1, 1) },
         uDpr: { value: 1 },
+        uCell: { value: 1 },
         uColor: { value: COLOR },
       },
     };
@@ -83,6 +84,10 @@ export function AmbientSpores({ composition, seed, frozen }: Props) {
     if (!materialRef.current) return;
     uniforms.uViewport.value.set(state.size.width, state.size.height);
     uniforms.uDpr.value = Math.min(state.gl.getPixelRatio(), 1.5);
+    uniforms.uCell.value = Math.max(
+      1,
+      Math.round(Math.max(state.size.width / composition.width, state.size.height / composition.height)),
+    );
     uniforms.uTime.value = frozen ? 0 : state.clock.elapsedTime;
   });
 
@@ -112,6 +117,7 @@ attribute float aAlpha;
 uniform float uTime;
 uniform vec2 uViewport;
 uniform float uDpr;
+uniform float uCell;
 
 varying float vAlpha;
 
@@ -124,9 +130,11 @@ void main() {
 
   vec2 uv = vec2(position.x + driftX, fract(position.y + driftY + 1.0));
   vec2 screen = uv * uViewport;
+  // Same pixel grid as the poster underneath.
+  screen = floor(screen / uCell) * uCell + uCell * 0.5;
 
   gl_Position = projectionMatrix * modelViewMatrix * vec4(screen, 0.0, 1.0);
-  gl_PointSize = aSize * uDpr;
+  gl_PointSize = max(1.0, floor(uCell)) * uDpr;
 
   // Fade out near the very top and bottom so nothing pops at the seam.
   vAlpha = aAlpha * smoothstep(0.0, 0.08, uv.y) * (1.0 - smoothstep(0.5, 0.62, uv.y));
@@ -140,8 +148,6 @@ uniform vec3 uColor;
 varying float vAlpha;
 
 void main() {
-  vec2 d = gl_PointCoord - 0.5;
-  if (dot(d, d) > 0.25) discard;
   gl_FragColor = vec4(uColor, vAlpha);
 }
 `;

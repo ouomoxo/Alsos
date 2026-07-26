@@ -21,6 +21,11 @@
   /* Desktop art is composed with the tree right of centre; hold that anchor
      when the viewport is a different shape than the source frame. */
   object-position: 58% 50%;
+  /* This is pixel art shipped at its native resolution: the browser must
+     upscale it with nearest-neighbour, or the hard cell edges the whole look
+     depends on get smoothed into mush. */
+  image-rendering: pixelated;
+
   /* The LQIP is painted as a background so the box is never empty while the
      full frame decodes. */
   background-size: cover;

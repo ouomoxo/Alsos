@@ -8,8 +8,6 @@ import manifestJson from "../../../public/assets/hero/manifest.json";
  * shape — no component changes (§13.3 asks for exactly this versioned handoff).
  */
 
-export type PosterSource = { w: number; src: string };
-
 export type SafeArea = {
   edge: "left" | "right" | "top" | "bottom";
   extent: number;
@@ -22,7 +20,8 @@ export type HeroComposition = {
   media: string;
   width: number;
   height: number;
-  poster: { avif: PosterSource[]; webp: PosterSource[] };
+  /** Native pixel-art resolution sources. Upscaled by CSS, never resampled. */
+  poster: { png: string; webp: string };
   /** Inline blur placeholder so the frame is never empty. */
   lqip: string;
   /** Normalised anchor where the tree meets the palm. */
@@ -47,10 +46,6 @@ export const heroManifest = manifestJson as HeroManifest;
 export const heroCompositions = [...heroManifest.compositions].sort(
   (a, b) => b.width / b.height - a.width / a.height,
 );
-
-export function srcSet(sources: PosterSource[]): string {
-  return sources.map((s) => `${s.src} ${s.w}w`).join(", ");
-}
 
 export function compositionById(id: string): HeroComposition {
   const found = heroManifest.compositions.find((c) => c.id === id);
