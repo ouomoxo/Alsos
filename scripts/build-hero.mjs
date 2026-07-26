@@ -47,9 +47,19 @@ const RAMP = [
   "#636a3c", "#7b813f", "#9ca156", "#c3c572", "#e9e98c", "#f4f4d2",
 ].map(hexToLinear);
 
-const SPORE = hexToLinear("#e9e98c");
-const SPORE_BRIGHT = hexToLinear("#f4f4d2");
-const LICHEN = hexToLinear("#c3c572");
+const SPORE = hexToLinear("#c3c572");
+const LICHEN = hexToLinear("#9ca156");
+
+/**
+ * The tree's own ramp — heartwood to leaf tip.
+ *
+ * Deliberately inside the plate's green family rather than the near-white it
+ * started as: a cream tree on an olive grove reads as two different materials
+ * pasted together, however bright the glow behind it.
+ */
+const TREE_CORE = hexToLinear("#e9e98c");
+const TREE_MID = hexToLinear("#c3c572");
+const TREE_TIP = hexToLinear("#9ca156");
 
 /* -------------------------------------------------------- compositions --- */
 
@@ -240,12 +250,14 @@ async function renderComposition(comp, tree) {
       // replaces the sphere and the caption is another brand's copy.
       const nu = sx / hand.width;
       const nv = sy / hand.height;
-      const inSphere = Math.hypot((nu - SOURCE_PALM.x) / 0.135, (nv - SOURCE_PALM.y) / 0.2) < 1;
       const inCaption = nu < 0.36 && nv > 0.75;
       if (inCaption) continue;
 
-      let coverage = smoothstep(0.05, 0.22, v);
-      if (inSphere) coverage *= clamp01(1 - smoothstep(0.3, 0.7, v));
+      // The sphere the photograph was shot with, and its bloom. The tree
+      // replaces it, so everything above the hand's own tonal range goes.
+      if (v > 0.5) continue;
+
+      let coverage = smoothstep(0.04, 0.18, v) * (1 - smoothstep(0.4, 0.5, v));
       if (coverage <= 0.01) continue;
 
       const p = y * W + x;
@@ -264,7 +276,7 @@ async function renderComposition(comp, tree) {
       // 0.10-0.52 once the sphere is out, so it is remapped across that band —
       // read raw it collapses to almost nothing and the hand goes flat.
       const modelling = smoothstep(0.10, 0.52, v);
-      const lit = modelling * (0.16 + bounce * 0.9);
+      const lit = modelling * (0.22 + bounce * 1.1);
 
       const base = 0.06;
       const hr = RAMP[1][0] * base + LICHEN[0] * lit;
@@ -283,7 +295,7 @@ async function renderComposition(comp, tree) {
     for (let x = 0; x < W; x++) {
       const d = Math.hypot(x - palmX, (y - palmY) * 1.45) / (comp.treeHeight * H * 0.3);
       if (d > 1) continue;
-      const a = Math.pow(1 - d, 2.4) * 0.3;
+      const a = Math.pow(1 - d, 2.6) * 0.22;
       const i = (y * W + x) * 3;
       rgb[i] += SPORE[0] * a;
       rgb[i + 1] += SPORE[1] * a;
@@ -492,8 +504,9 @@ function sampleTreeParticles(tree, rng, count) {
   };
 
   const toByte = (c) => c.map((v) => Math.round(Math.pow(clamp01(v), 1 / 2.2) * 255));
-  const bright = toByte(SPORE_BRIGHT);
-  const spore = toByte(SPORE);
+  const colCore = toByte(TREE_CORE);
+  const colMid = toByte(TREE_MID);
+  const colTip = toByte(TREE_TIP);
 
   const out = [];
   const wood = Math.round(count * 0.42);
@@ -510,9 +523,9 @@ function sampleTreeParticles(tree, rng, count) {
       x: lerp(seg.x0, seg.x1, t) + off * w,
       y: lerp(seg.y0, seg.y1, t) + gaussian(rng, 0, w * 0.4 * spread),
       birth,
-      alpha: lerp(0.1, 0.52, core * core) * lerp(1, 0.5, birth),
+      alpha: lerp(0.07, 0.30, core * core) * lerp(1, 0.6, birth),
       big: core > 0.62 && rng() < 0.16,
-      colour: birth < 0.4 ? bright : spore,
+      colour: birth < 0.35 ? colCore : birth < 0.7 ? colMid : colTip,
     });
   }
 
@@ -530,7 +543,7 @@ function sampleTreeParticles(tree, rng, count) {
         birth: clamp01(cl.path + rng() * 0.05),
         alpha: Math.pow(falloff, 1.1) * lerp(0.1, 0.34, rng()) * cl.density,
         big: false,
-        colour: spore,
+        colour: colTip,
       });
     }
   }

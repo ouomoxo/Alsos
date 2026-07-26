@@ -32,10 +32,14 @@
   margin: 0;
   font-family: var(--font-display);
   font-size: var(--hero-title-size);
-  font-weight: 400;
+  /* The display face carries the reference's weight only at 700; at 400 it
+     reads spindly against artwork this dense. */
+  font-weight: 700;
   line-height: var(--hero-title-line-height);
   letter-spacing: var(--hero-title-tracking);
   text-transform: uppercase;
+  /* Warm off-white, not pure white — the headline belongs to the grove's
+     palette rather than sitting on top of it as a separate material. */
   color: var(--text-primary);
 }
 

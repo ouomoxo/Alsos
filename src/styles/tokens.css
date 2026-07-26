@@ -26,7 +26,7 @@
   --spore-300: #c3c572;
   --spore-200: #e9e98c;
 
-  --text-primary: #f7f7f4;
+  --text-primary: #f2f2e6;
   --text-secondary: #abada0;
   --text-tertiary: #808368;
 
@@ -44,7 +44,7 @@
   --state-info: #86a7a0;
 
   /* Typography */
-  --font-display: "ALSOS Grid", "Silkscreen", "Departure Mono", monospace;
+  --font-display: "ALSOS Grid", "Pixelify Sans", "Departure Mono", monospace;
   --font-body: "Pretendard Variable", "Noto Sans KR", sans-serif;
   --font-ui: "Geist Mono Variable", "IBM Plex Mono", monospace;
   --font-code: "JetBrains Mono", "IBM Plex Mono", monospace;
