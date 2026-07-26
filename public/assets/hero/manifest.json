@@ -1,11 +1,7 @@
 {
-  "version": 3,
-  "seed": "alsos-grove-v1",
+  "version": 4,
+  "seed": "alsos-vault-v2",
   "generatedBy": "scripts/build-hero.mjs",
-  "sources": {
-    "forest": "art/source/forest.jpg"
-  },
-  "skeleton": "/assets/hero/tree-skeleton.json",
   "og": "/assets/hero/og-image-1200x630.jpg",
   "compositions": [
     {
@@ -17,77 +13,72 @@
         "avif": [
           {
             "w": 1280,
-            "src": "/assets/hero/desktop/grove-desktop-1280.avif"
+            "src": "/assets/hero/desktop/vault-desktop-1280.avif"
           },
           {
             "w": 1920,
-            "src": "/assets/hero/desktop/grove-desktop-1920.avif"
+            "src": "/assets/hero/desktop/vault-desktop-1920.avif"
           },
           {
             "w": 2560,
-            "src": "/assets/hero/desktop/grove-desktop-2560.avif"
+            "src": "/assets/hero/desktop/vault-desktop-2560.avif"
           },
           {
             "w": 3200,
-            "src": "/assets/hero/desktop/grove-desktop.avif"
+            "src": "/assets/hero/desktop/vault-desktop.avif"
           }
         ],
         "webp": [
           {
             "w": 1280,
-            "src": "/assets/hero/desktop/grove-desktop-1280.webp"
+            "src": "/assets/hero/desktop/vault-desktop-1280.webp"
           },
           {
             "w": 1920,
-            "src": "/assets/hero/desktop/grove-desktop-1920.webp"
+            "src": "/assets/hero/desktop/vault-desktop-1920.webp"
           },
           {
             "w": 2560,
-            "src": "/assets/hero/desktop/grove-desktop-2560.webp"
+            "src": "/assets/hero/desktop/vault-desktop-2560.webp"
           },
           {
             "w": 3200,
-            "src": "/assets/hero/desktop/grove-desktop.webp"
+            "src": "/assets/hero/desktop/vault-desktop.webp"
           }
         ]
       },
-      "lqip": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADwAQCdASoQAAYAAsBMJZQC7AEPhvcUhAAA/vtuZ1Xm9jZvbwCFmwI0b/LaPEI4sJAFEKtrwAA=",
+      "lqip": "data:image/webp;base64,UklGRkYAAABXRUJQVlA4IDoAAADQAQCdASoQAAYAAsBMJQBOgB+CjTVBUAD++u/3FNSP6R25wCm7xGdc8fZAvuT7XUuQAgN69mSsgAAA",
       "growth": {
-        "src": "/assets/hero/desktop/tree-desktop.png",
-        "frames": 32,
-        "frameWidth": 276,
-        "frameHeight": 404,
+        "src": "/assets/hero/desktop/canopy-desktop.png",
+        "frames": 34,
+        "frameWidth": 1067,
+        "frameHeight": 420,
         "rect": {
-          "x": 0.42404788395991844,
-          "y": 0.3497380022073069,
-          "width": 0.17242688498670355,
-          "height": 0.6409240161362273
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
         }
       },
-      "root": {
-        "x": 0.54,
-        "y": 0.9
+      "zenith": {
+        "x": 0.63,
+        "y": 0.42
       },
-      "light": {
-        "x": 0.54,
-        "y": -0.14
-      },
-      "treeHeight": 0.52,
       "safe": [
         {
           "edge": "left",
-          "extent": 0.4,
-          "strength": 0.62
+          "extent": 0.32,
+          "strength": 0.58
         },
         {
           "edge": "right",
-          "extent": 0.14,
-          "strength": 0.6
+          "extent": 0.11,
+          "strength": 0.52
         },
         {
           "edge": "top",
-          "extent": 0.13,
-          "strength": 0.55
+          "extent": 0.11,
+          "strength": 0.44
         }
       ]
     },
@@ -100,72 +91,67 @@
         "avif": [
           {
             "w": 576,
-            "src": "/assets/hero/mobile/grove-mobile-576.avif"
+            "src": "/assets/hero/mobile/vault-mobile-576.avif"
           },
           {
             "w": 864,
-            "src": "/assets/hero/mobile/grove-mobile-864.avif"
+            "src": "/assets/hero/mobile/vault-mobile-864.avif"
           },
           {
             "w": 1152,
-            "src": "/assets/hero/mobile/grove-mobile-1152.avif"
+            "src": "/assets/hero/mobile/vault-mobile-1152.avif"
           },
           {
             "w": 1440,
-            "src": "/assets/hero/mobile/grove-mobile.avif"
+            "src": "/assets/hero/mobile/vault-mobile.avif"
           }
         ],
         "webp": [
           {
             "w": 576,
-            "src": "/assets/hero/mobile/grove-mobile-576.webp"
+            "src": "/assets/hero/mobile/vault-mobile-576.webp"
           },
           {
             "w": 864,
-            "src": "/assets/hero/mobile/grove-mobile-864.webp"
+            "src": "/assets/hero/mobile/vault-mobile-864.webp"
           },
           {
             "w": 1152,
-            "src": "/assets/hero/mobile/grove-mobile-1152.webp"
+            "src": "/assets/hero/mobile/vault-mobile-1152.webp"
           },
           {
             "w": 1440,
-            "src": "/assets/hero/mobile/grove-mobile.webp"
+            "src": "/assets/hero/mobile/vault-mobile.webp"
           }
         ]
       },
-      "lqip": "data:image/webp;base64,UklGRkwAAABXRUJQVlA4IEAAAABwAwCdASoQABUAPtFUo0uoJKMhsAgBABoJZwDLLCHgB6vD+oAA/vXLBo0EtQfmph2QaNOWDTDRdgm+mstmgAAA",
+      "lqip": "data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAwCdASoQABUAPtFUo0uoJKMhsAgBABoJQBOmUABp2t4imJ4vjUAA/vRR8KNp24ZIl+UWXEXYWXlWalkTFJPEga2JjlQJytYAAA==",
       "growth": {
-        "src": "/assets/hero/mobile/tree-mobile.png",
-        "frames": 32,
-        "frameWidth": 324,
-        "frameHeight": 474,
+        "src": "/assets/hero/mobile/canopy-mobile.png",
+        "frames": 34,
+        "frameWidth": 480,
+        "frameHeight": 640,
         "rect": {
-          "x": 0.19796762610642166,
-          "y": 0.23672154015946692,
-          "width": 0.4491379991513646,
-          "height": 0.49301847395094417
+          "x": 0,
+          "y": 0,
+          "width": 1,
+          "height": 1
         }
       },
-      "root": {
+      "zenith": {
         "x": 0.5,
-        "y": 0.66
+        "y": 0.34
       },
-      "light": {
-        "x": 0.5,
-        "y": -0.1
-      },
-      "treeHeight": 0.4,
       "safe": [
         {
           "edge": "bottom",
-          "extent": 0.46,
-          "strength": 0.9
+          "extent": 0.4,
+          "strength": 0.7
         },
         {
           "edge": "top",
           "extent": 0.09,
-          "strength": 0.5
+          "strength": 0.44
         }
       ]
     }

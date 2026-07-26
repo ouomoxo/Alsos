@@ -8,44 +8,50 @@
  */
 
 :root {
-  /* ------------------------------------------------------------- grove ---
-     One ramp, shadow to sun, rotating in hue as it climbs: cold blue-teal
-     darks through jade and leaf into warm gold. The warmth of the light is
-     only legible against the coldness of the dark — a single-hue palette can
-     be atmospheric but it cannot be luminous. Sampled from the plate. */
+  /* ------------------------------------------------------------- vault ---
+     One ramp, corner to break, rotating in hue as it climbs: near-black blue
+     through dusk, teal and leaf into warm gold at the gap in the canopy. The
+     warmth of the light is only legible against the coldness of the dark — a
+     single-hue palette can be atmospheric but it cannot be luminous.
 
-  --void-950: #04070c;
-  --forest-900: #071219;
-  --forest-850: #0b2226;
-  --forest-800: #123a33;
-  --forest-750: #1b5741;
-  --moss-700: #1b5741;
-  --moss-650: #2c7a4f;
-  --moss-600: #2c7a4f;
-  --moss-550: #4f9c5b;
-  --lichen-500: #86bb66;
-  --spore-400: #b9d180;
-  --spore-300: #e3dd9b;
-  --spore-200: #f6ecc0;
+     These are literal samples of the plate: the same SKY ramp in
+     scripts/build-hero.mjs, evaluated at thirteen points. DOM chrome and
+     artwork are therefore in the same light by construction, not by eye. */
+
+  --void-950: #070c16;
+  --forest-900: #0c1829;
+  --forest-850: #143040;
+  --forest-800: #1d4851;
+  --forest-750: #255d59;
+  --moss-700: #2f735b;
+  --moss-650: #45855a;
+  --moss-600: #5b945b;
+  --moss-550: #7fa85d;
+  --lichen-500: #a1b664;
+  --spore-400: #cfc275;
+  --spore-300: #ead69c;
+  --spore-200: #f8eac8;
 
   /* Text carries the same temperature split: warm at the top of the ramp,
-     cool sage in the middle voice. */
-  --text-primary: #f6f2e2;
-  --text-secondary: #a9c0a4;
-  --text-tertiary: #6f8a76;
+     cool sage-teal in the middle voice. The plate behind the copy column is
+     the darkest part of the frame, so the secondary voice can stay quiet and
+     still clear 4.5:1 against it. */
+  --text-primary: #f4efe0;
+  --text-secondary: #b2c8bb;
+  --text-tertiary: #8aa49e;
 
-  --border-subtle: rgba(227, 221, 155, 0.16);
-  --border-default: rgba(227, 221, 155, 0.32);
-  --border-active: rgba(246, 236, 192, 0.7);
+  --border-subtle: rgba(234, 214, 156, 0.16);
+  --border-default: rgba(234, 214, 156, 0.32);
+  --border-active: rgba(248, 234, 200, 0.7);
 
-  --glow-subtle: 0 0 26px rgba(227, 221, 155, 0.14);
-  --glow-active: 0 0 40px rgba(246, 236, 192, 0.26);
+  --glow-subtle: 0 0 26px rgba(234, 214, 156, 0.14);
+  --glow-active: 0 0 40px rgba(248, 234, 200, 0.26);
 
   /* Functional state. Never the only carrier of meaning (§19). */
-  --state-success: #9ca156;
-  --state-warning: #d1a75a;
-  --state-danger: #c56f64;
-  --state-info: #86a7a0;
+  --state-success: #7fa85d;
+  --state-warning: #d3ac62;
+  --state-danger: #c8746a;
+  --state-info: #6fa3a6;
 
   /* Typography */
   --font-display: "ALSOS Grid", "Pixelify Sans", "Departure Mono", monospace;

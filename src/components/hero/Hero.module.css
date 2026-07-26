@@ -42,7 +42,7 @@
      palette rather than sitting on top of it as a separate material. */
   color: var(--text-primary);
   /* The light in the plate falls on the type too. */
-  text-shadow: 0 0 42px rgba(227, 221, 155, 0.16);
+  text-shadow: 0 0 42px rgba(234, 214, 156, 0.16);
 }
 
 .body {
@@ -187,17 +187,34 @@
 /**
  * The growth sprite sits between the poster and the copy.
  *
- * `pixelated` is correct here and only here: this layer genuinely is a
- * low-resolution pixel image (one cell per art pixel), unlike the cinematic
- * forest plate underneath it (§5.4).
+ * It is rendered at a third of the plate's resolution and scaled back up, so it
+ * must interpolate. `pixelated` would be right for a pixel-grid image, but this
+ * layer is the same stipple as the plate underneath it — snapping it to a
+ * lattice would put a visible grid over artwork that has none.
  */
-.tree {
+/* Size containment is what makes cqw/cqh available. It is safe here because the
+   stage's own box is fixed by `inset: 0` and its only child is out of flow. */
+.treeStage {
   position: absolute;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
+  overflow: hidden;
+  container-type: size;
+}
+
+/* The cover crop, in CSS: whichever of width-driven or height-driven sizing is
+   larger wins, and the plate's anchor point is pinned to the same relative
+   position in the box that the poster's object-position pins it to. */
+.tree {
+  position: absolute;
+  left: var(--anchor-x);
+  top: var(--anchor-y);
+  translate: calc(-1 * var(--anchor-x)) calc(-1 * var(--anchor-y));
+  width: max(100cqw, calc(100cqh * var(--plate-aspect)));
+  height: max(100cqh, calc(100cqw / var(--plate-aspect)));
   background-repeat: no-repeat;
-  image-rendering: pixelated;
-  animation: tree-growth 1750ms 650ms both;
+  animation: tree-growth 2400ms 700ms both;
 }
 
 @keyframes tree-growth {
@@ -234,9 +251,11 @@
   z-index: 3;
   pointer-events: none;
   overflow: hidden;
-  /* Only where the light is. Motes in the dark are just noise. */
+  /* Only where the light is. Motes in the dark are just noise. The centre
+     comes from the manifest's zenith, so the mask cannot drift off the break
+     when the plate is regenerated. */
   mask-image: radial-gradient(
-    ellipse 42% 85% at 55% 20%,
+    ellipse 34% 62% at var(--zenith-x, 63%) var(--zenith-y, 42%),
     rgba(0, 0, 0, 0.95) 0%,
     rgba(0, 0, 0, 0.5) 45%,
     transparent 78%
@@ -255,14 +274,14 @@
 /* Three sizes at three speeds. The far layer is nearly still, which is what
    sells the parallax — matched speeds read as one sheet sliding. */
 .moteLayer[data-layer="far"] {
-  background-image: radial-gradient(circle at center, rgba(227, 221, 155, 0.5) 0.5px, transparent 0.9px);
+  background-image: radial-gradient(circle at center, rgba(234, 214, 156, 0.5) 0.5px, transparent 0.9px);
   background-size: 61px 79px;
   animation-duration: 132s;
   opacity: 0.5;
 }
 
 .moteLayer[data-layer="mid"] {
-  background-image: radial-gradient(circle at center, rgba(232, 221, 155, 0.62) 0.7px, transparent 1.3px);
+  background-image: radial-gradient(circle at center, rgba(238, 222, 164, 0.62) 0.7px, transparent 1.3px);
   background-size: 113px 143px;
   animation-duration: 88s;
   animation-direction: reverse;
@@ -270,7 +289,7 @@
 }
 
 .moteLayer[data-layer="near"] {
-  background-image: radial-gradient(circle at center, rgba(246, 236, 192, 0.75) 1.1px, transparent 2.1px);
+  background-image: radial-gradient(circle at center, rgba(248, 234, 200, 0.75) 1.1px, transparent 2.1px);
   background-size: 227px 281px;
   animation-duration: 61s;
   opacity: 0.5;

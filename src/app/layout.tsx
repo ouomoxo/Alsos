@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 
-import { ReferenceOverlay } from "@/components/dev/ReferenceOverlay.client";
 import { heroManifest } from "@/lib/hero/manifest";
 
 import "@/styles/fonts.css";
@@ -28,7 +27,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#070908",
+  // The plate's darkest corner, so the browser chrome joins the vault.
+  themeColor: "#070c16",
   colorScheme: "dark",
   // Zoom is never capped — §15 requires 200% to stay usable.
   width: "device-width",
@@ -43,8 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           본문으로 건너뛰기
         </a>
         {children}
-        {/* Layout-matching tool, development builds only (§24). */}
-        {process.env.NODE_ENV !== "production" && <ReferenceOverlay />}
       </body>
     </html>
   );

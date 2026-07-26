@@ -1,26 +1,36 @@
 #!/usr/bin/env node
 /**
- * ALSOS — the grove.
+ * ALSOS — the vault.
  *
- * The hero is not a photograph and not a grid of pixels. It is a stipple: some
- * six hundred thousand individual points, placed off-grid, whose density and
- * size carry the image the way ink does in an engraving. Nothing snaps to a
- * cell, so the forms keep their curves.
+ * You are lying on the floor of the grove looking straight up.
  *
- * Three ideas hold it together:
+ * That single decision is the whole piece. A forest photographed at eye level
+ * is a landscape, and a landscape is something you stand in front of. A canopy
+ * seen from directly beneath is something you are *inside*: the trunks leave
+ * the frame behind your head, the branches subdivide over you, and everything
+ * converges on one break in the leaves. The viewer's neck is already tilted
+ * back before they have read a word.
  *
- *   Colour is a harmony, not a tint. Shadows fall toward deep cold teal and
- *   light rises toward warm gold — complementaries at the two ends of one
- *   ramp. A single-hue image can be moody but it cannot be luminous, because
- *   luminosity is the *contrast* between a cold dark and a warm light.
+ * It is also, exactly, what ALSOS means — growth reaching toward light, drawn
+ * from beneath by the thing doing the reaching.
  *
- *   Density is the drawing. Points cluster where light gathers and thin out
- *   into the dark, so the eye reads mass and air rather than edges. Point size
- *   falls with distance, which is what gives the grove its depth.
+ * Four ideas:
  *
- *   Scale overwhelms. The trunks run past both edges of the frame, the light
- *   falls from somewhere above the top of it, and the tree at the centre is
- *   small against all of it. The viewer is inside something old.
+ *   Radial, not horizontal. Every hero on the internet is a landscape in a
+ *   letterbox. This one converges. The eye is pulled toward a point instead of
+ *   swept across a band, and convergence is what produces vertigo.
+ *
+ *   Warm centre, cold edge. Gold at the break in the canopy falling through
+ *   sage and teal into deep blue at the corners. A radial temperature gradient
+ *   reads as enormous distance in a way a single hue never can.
+ *
+ *   Mass, not line. A canopy is foliage with branches threaded through it, not
+ *   a diagram of branches. Four layers of leaf mass at four depths, with the
+ *   wood interleaved between them, is what separates a forest from a cobweb.
+ *
+ *   Silhouette and rim. Everything is near-black, lit only where it cuts across
+ *   the bright sky behind it. Backlight is what makes a canopy beautiful — the
+ *   structure is a drawing in negative.
  *
  *   npm run assets:hero
  */
@@ -31,13 +41,11 @@ import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
 import { clamp01, gaussian, lerp, makeFbm2D, makeRng, smoothstep } from "./lib/rng.mjs";
-import { generateTree, serializeTree } from "./lib/tree.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "public", "assets", "hero");
-const SRC = path.join(ROOT, "art", "source");
-const SEED = "alsos-grove-v1";
-const GROWTH_FRAMES = 32;
+const SEED = "alsos-vault-v2";
+const GROWTH_FRAMES = 34;
 
 /* --------------------------------------------------------------- colour --- */
 
@@ -47,39 +55,38 @@ const hexToLinear = (hex) => {
 };
 
 /**
- * The grove's ramp, shadow to sun.
+ * The sky, from the break in the leaves outward.
  *
- * Read the hues along it: the darks are blue-teal, the middles turn jade, the
- * lights swing through leaf-green into gold. That rotation is the whole colour
- * idea — warm light can only feel warm against a cold dark.
+ * Warm gold at the centre, cooling through sage and teal into deep blue at the
+ * frame's corners. The rotation is doing the work: a warm core inside a cold
+ * surround reads as depth and as distance, which is why every dusk sky looks
+ * like this and why a flat green one never feels far away.
  */
-const RAMP = [
-  [0.00, "#04070c"], // abyss
-  [0.08, "#06131a"], // deep water
-  [0.18, "#0a2426"], // teal shadow
-  [0.30, "#113c31"], // moss in shade
-  [0.42, "#1a5b3c"], // jade
-  [0.54, "#2f7f47"], // living green
-  [0.65, "#5aa054"], // sunlit leaf
-  [0.75, "#93c065"], // haze
-  [0.84, "#c6d582"], // light through leaves
-  [0.91, "#e8dd9b"], // gold
-  [0.96, "#f7edc2"], // near the source
-  [1.00, "#fffbe8"], // the sun itself
+const SKY = [
+  [0.0, "#070c16"], // the corners, almost night
+  [0.1, "#0d1a2c"], // deep blue
+  [0.22, "#173747"], // dusk
+  [0.36, "#205258"], // teal
+  [0.5, "#2f735b"], // the last green
+  [0.62, "#4f8e5a"], // sage
+  [0.73, "#8fb35f"], // leaf edge
+  [0.83, "#cdc072"], // gold beginning
+  [0.91, "#ecd79e"], // gold
+  [0.97, "#f9eccb"], // near the break
+  [1.0, "#fffbef"], // the sky itself
 ].map(([stop, hex]) => [stop, hexToLinear(hex)]);
 
-/** Sample the ramp continuously. */
-function ramp(t) {
+function sky(t) {
   const v = clamp01(t);
-  for (let i = 1; i < RAMP.length; i++) {
-    if (v <= RAMP[i][0]) {
-      const [t0, c0] = RAMP[i - 1];
-      const [t1, c1] = RAMP[i];
+  for (let i = 1; i < SKY.length; i++) {
+    if (v <= SKY[i][0]) {
+      const [t0, c0] = SKY[i - 1];
+      const [t1, c1] = SKY[i];
       const k = (v - t0) / (t1 - t0 || 1);
       return [lerp(c0[0], c1[0], k), lerp(c0[1], c1[1], k), lerp(c0[2], c1[2], k)];
     }
   }
-  return RAMP[RAMP.length - 1][1];
+  return SKY[SKY.length - 1][1];
 }
 
 /* -------------------------------------------------------- compositions --- */
@@ -90,19 +97,29 @@ const COMPOSITIONS = [
     width: 3200,
     height: 1260,
     media: "(min-width: 768px)",
-    forestFocus: { x: 0.5, y: 0.46 },
-    /** Above the top edge: the source is never in frame, only its light. */
-    light: { x: 0.54, y: -0.14 },
-    root: { x: 0.54, y: 0.9 },
-    treeHeight: 0.52,
-    points: 620000,
-    trunks: 46,
-    rays: 16,
-    /** Copy sits here, so the stipple thins and the ramp darkens. */
+    /** The break in the canopy. Off-centre, so the copy column stays dark. */
+    zenith: { x: 0.63, y: 0.42 },
+    /** Half-extent of the light, as a fraction of each axis. Anisotropic so
+     *  the fall is slower along the wide axis and the gradient stays radial
+     *  rather than becoming an ellipse squashed by the aspect ratio. */
+    spread: { x: 0.66, y: 1.12 },
+    /** A canopy never has exactly one gap. The lesser breaks are far too weak
+     *  to compete for the eye, but they keep the outer frame from collapsing
+     *  into a single flat vignette and give the darkness somewhere to go. */
+    breaks: [
+      { x: 0.29, y: 0.14, radius: 0.44, strength: 0.3 },
+      { x: 0.88, y: 0.76, radius: 0.32, strength: 0.2 },
+    ],
+    points: 2400000,
+    trunks: 8,
+    /** Where the plate is asked to be quiet so type can be read on it. These
+     *  are not decoration: the measured contrast of the body copy and the rail
+     *  labels depends on them, so they are tuned against the render, not by
+     *  eye. */
     safe: [
-      { edge: "left", extent: 0.4, strength: 0.62 },
-      { edge: "right", extent: 0.14, strength: 0.6 },
-      { edge: "top", extent: 0.13, strength: 0.55 },
+      { edge: "left", extent: 0.32, strength: 0.58 },
+      { edge: "right", extent: 0.11, strength: 0.52 },
+      { edge: "top", extent: 0.11, strength: 0.44 },
     ],
   },
   {
@@ -110,16 +127,17 @@ const COMPOSITIONS = [
     width: 1440,
     height: 1920,
     media: "(max-width: 767px)",
-    forestFocus: { x: 0.5, y: 0.4 },
-    light: { x: 0.5, y: -0.1 },
-    root: { x: 0.5, y: 0.66 },
-    treeHeight: 0.4,
-    points: 330000,
-    trunks: 30,
-    rays: 11,
+    zenith: { x: 0.5, y: 0.34 },
+    spread: { x: 1.16, y: 0.72 },
+    breaks: [
+      { x: 0.19, y: 0.62, radius: 0.4, strength: 0.26 },
+      { x: 0.82, y: 0.16, radius: 0.34, strength: 0.2 },
+    ],
+    points: 1300000,
+    trunks: 7,
     safe: [
-      { edge: "bottom", extent: 0.46, strength: 0.9 },
-      { edge: "top", extent: 0.09, strength: 0.5 },
+      { edge: "bottom", extent: 0.4, strength: 0.7 },
+      { edge: "top", extent: 0.09, strength: 0.44 },
     ],
   },
 ];
@@ -140,7 +158,6 @@ function safeMultiplier(comp, x, y) {
 
 /* ---------------------------------------------------------------- canvas --- */
 
-/** Additive float canvas. Points accumulate as light does. */
 class Canvas {
   constructor(width, height) {
     this.width = width;
@@ -148,12 +165,6 @@ class Canvas {
     this.data = new Float32Array(width * height * 3);
   }
 
-  /**
-   * One stipple point.
-   *
-   * Soft-edged and sub-pixel accurate: a hard square would put the image back
-   * on a grid, and it is the absence of a grid that lets the grove curve.
-   */
   point(cx, cy, radius, colour, intensity) {
     const { width, height, data } = this;
     const minX = Math.max(0, Math.floor(cx - radius));
@@ -161,14 +172,12 @@ class Canvas {
     const minY = Math.max(0, Math.floor(cy - radius));
     const maxY = Math.min(height - 1, Math.ceil(cy + radius));
     const inv = 1 / (radius * radius);
-
     for (let y = minY; y <= maxY; y++) {
       const dy = y + 0.5 - cy;
       for (let x = minX; x <= maxX; x++) {
         const dx = x + 0.5 - cx;
         const d2 = (dx * dx + dy * dy) * inv;
         if (d2 >= 1) continue;
-        // Smooth shoulder, so points read as grains of light, not discs.
         const a = (1 - d2) * (1 - d2) * intensity;
         const i = (y * width + x) * 3;
         data[i] += colour[0] * a;
@@ -179,328 +188,343 @@ class Canvas {
   }
 }
 
-/* ---------------------------------------------------------------- source --- */
-
-async function loadForest(file, width, height, focus) {
-  const image = sharp(file);
-  const meta = await image.metadata();
-  const scale = Math.max(width / meta.width, height / meta.height);
-  const drawnW = Math.ceil(meta.width * scale);
-  const drawnH = Math.ceil(meta.height * scale);
-  const left = Math.round(clamp01(focus.x) * (drawnW - width));
-  const top = Math.round(clamp01(focus.y) * (drawnH - height));
-
-  const { data } = await image
-    .resize(drawnW, drawnH)
-    // A gentle blur first: we are sampling structure, not texture, and the
-    // stipple supplies all the grain the image needs.
-    .blur(2.2)
-    .extract({ left, top, width, height })
-    .removeAlpha()
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return data;
-}
-
-/* ---------------------------------------------------------------- scene --- */
+/* --------------------------------------------------------------- canopy --- */
 
 /**
- * Build the luminance field the stipple will be drawn from.
+ * Grow the vault.
  *
- * This is the painting, done in one channel: the photograph's structure, the
- * cathedral verticals, the shafts falling through them, ground mist, and the
- * glow at the root. The stipple pass then renders it as points.
+ * Trunks enter from outside the frame — behind and beside the viewer's head —
+ * and reach *inward* toward the break in the leaves. Perspective runs opposite
+ * to a landscape's: a limb is thickest at the frame edge where it is closest
+ * to the eye, and thins as it recedes toward the zenith. Getting that backwards
+ * would make the image read as a flat radial pattern instead of as looking up.
+ *
+ * A limb stops well short of the break. Wood that runs the full radius reads as
+ * a spoke on a wheel; wood that gives out halfway and hands off to foliage
+ * reads as a tree.
+ *
+ * Every segment records how far it sits from its trunk along the wood, so the
+ * growth animation can open the vault outward from its trunks.
  */
-function buildField(comp, forest, rng) {
+function growCanopy(comp, rng) {
+  const { width: W, height: H } = comp;
+  const zx = comp.zenith.x * W;
+  const zy = comp.zenith.y * H;
+  const segments = [];
+  let maxPath = 0;
+
+  const branch = (x, y, angle, length, width, level, path, depth) => {
+    const steps = Math.max(3, 7 - level);
+    const stepLen = length / steps;
+    // A limb curves along its length; a straight one reads as a spoke.
+    const curl = gaussian(rng, 0, 0.3) / steps;
+    let cx = x;
+    let cy = y;
+    let ca = angle;
+    let cw = width;
+    let cPath = path;
+
+    for (let s = 0; s < steps; s++) {
+      // Limbs bend toward the light as they climb — but only just. Too strong
+      // and every limb turns into a radius; the pull has to be a tendency the
+      // wood argues with, not a destination it aims at.
+      const toward = Math.atan2(zy - cy, zx - cx);
+      let delta = toward - ca;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      ca += curl + delta * 0.035;
+
+      const nx = cx + Math.cos(ca) * stepLen;
+      const ny = cy + Math.sin(ca) * stepLen;
+      const nw = cw * 0.88;
+      const nPath = cPath + stepLen;
+
+      segments.push({ x0: cx, y0: cy, x1: nx, y1: ny, w0: cw, w1: nw, p0: cPath, p1: nPath, depth });
+      cx = nx;
+      cy = ny;
+      cw = nw;
+      cPath = nPath;
+    }
+    if (cPath > maxPath) maxPath = cPath;
+    if (level >= 7 || cw < W * 0.0004) return;
+
+    const forks = level === 0 ? 3 : level < 3 ? 3 : 2;
+    for (let i = 0; i < forks; i++) {
+      if (i > 0 && level > 2 && rng() < 0.2) continue;
+      const spread = lerp(0.55, 1.0, level / 7);
+      const offset =
+        forks === 1
+          ? gaussian(rng, 0, 0.22)
+          : lerp(-spread, spread, i / (forks - 1)) + gaussian(rng, 0, 0.2);
+      branch(
+        cx,
+        cy,
+        ca + offset,
+        length * lerp(0.58, 0.74, rng()),
+        cw * lerp(0.6, 0.8, rng()),
+        level + 1,
+        cPath,
+        // Each fork recedes a little further from the eye.
+        depth * lerp(0.85, 0.94, rng()),
+      );
+    }
+  };
+
+  // Trunk entries, spread around the frame well outside it so each limb
+  // arrives already thick.
+  for (let i = 0; i < comp.trunks; i++) {
+    const t = (i + lerp(0.15, 0.85, rng())) / comp.trunks;
+    const a = t * Math.PI * 2 + 0.4;
+    const x = zx + Math.cos(a) * W * 0.72;
+    const y = zy + Math.sin(a) * H * 0.92;
+    const toward = Math.atan2(zy - y, zx - x);
+    // Half the way in, at most. The rest of the vault is leaves.
+    const reach = Math.hypot(zx - x, zy - y) * lerp(0.3, 0.46, rng());
+    branch(x, y, toward + gaussian(rng, 0, 0.3), reach, W * lerp(0.014, 0.024, rng()), 0, 0, 1);
+  }
+
+  for (const s of segments) {
+    s.p0 = clamp01(s.p0 / maxPath);
+    s.p1 = clamp01(s.p1 / maxPath);
+  }
+  return segments;
+}
+
+/* ---------------------------------------------------------------- field --- */
+
+/**
+ * Four strata of foliage, near to far.
+ *
+ * Coverage climbs and the mass hardens as the layers approach the eye: distant
+ * leaves are large, soft, and let light through; the ones a metre above your
+ * face are small, dense, and absolutely black. `nearness` records the closest
+ * thing at each pixel so the stipple can coarsen its grain there — depth of
+ * field is what makes the top layer feel close enough to touch.
+ */
+/**
+ * Every stratum is two frequencies, and that is the whole trick.
+ *
+ * Thresholding a single low-frequency fbm produces continents with coastlines —
+ * a lichen stain, not a tree. Foliage is small elements that *clump*: a broad
+ * field decides where a clump of leaves hangs, and a much finer field decides
+ * which leaves inside it are lit. Coverage comes from the clump, shape comes
+ * from the leaf, and no feature is ever larger than the clump that placed it.
+ *
+ * `leaf` frequencies sit around 20-60px of feature at this scale — the size a
+ * cluster of leaves actually occupies overhead — and climb as the strata
+ * approach the eye, because near things are bigger and coarser.
+ */
+const STRATA = [
+  { clump: 0.00075, leaf: 0.0125, cover: 0.6, opacity: 0.42, depth: 0.1, glow: 0.55 },
+  { clump: 0.0012, leaf: 0.019, cover: 0.6, opacity: 0.54, depth: 0.3, glow: 0.46 },
+  { clump: 0.0019, leaf: 0.029, cover: 0.6, opacity: 0.66, depth: 0.58, glow: 0.34 },
+  { clump: 0.003, leaf: 0.045, cover: 0.61, opacity: 0.8, depth: 0.86, glow: 0.22 },
+];
+
+/**
+ * How sharply a stratum's mass turns on across the noise threshold. Narrow, so
+ * the fine octaves buried inside the gradient surface as a ragged edge and the
+ * rim highlight collapses from a halo into a filament.
+ */
+const LEAF_EDGE = 0.07;
+
+function buildField(comp, segments) {
   const { width: W, height: H } = comp;
   const field = new Float32Array(W * H);
-  const depth = new Float32Array(W * H);
-  const canopy = makeFbm2D(`${SEED}:canopy:${comp.id}`, 5);
-  const bark = makeFbm2D(`${SEED}:bark:${comp.id}`, 3);
+  const nearness = new Float32Array(W * H);
+  const haze = makeFbm2D(`${SEED}:haze:${comp.id}`, 4);
+  const shafts = makeFbm2D(`${SEED}:shafts:${comp.id}`, 3);
+  const strata = STRATA.map((s, i) => ({
+    ...s,
+    clumpFbm: makeFbm2D(`${SEED}:clump${i}:${comp.id}`, 3),
+    leafFbm: makeFbm2D(`${SEED}:leaf${i}:${comp.id}`, 4),
+  }));
 
-  const lx = comp.light.x * W;
-  const ly = comp.light.y * H;
-  const rootX = comp.root.x * W;
-  const rootY = comp.root.y * H;
+  const zx = comp.zenith.x * W;
+  const zy = comp.zenith.y * H;
+  const rx = W * comp.spread.x;
+  const ry = H * comp.spread.y;
 
-  /* ---------------------------------------------------------- the air --- */
+  /* The sky: a broad radial fall from the break outward, all the way to the
+     corners. The gradient has to cross the whole frame — if it lands inside a
+     few hundred pixels the image is a lamp in a dark room, not a canopy. */
+  const breaks = [
+    { x: zx, y: zy, rx, ry, strength: 1 },
+    ...(comp.breaks ?? []).map((b) => ({
+      x: b.x * W,
+      y: b.y * H,
+      rx: rx * b.radius,
+      ry: ry * b.radius,
+      strength: b.strength,
+    })),
+  ];
 
-  // Aerial perspective is the whole trick. Distance does not darken a forest,
-  // it *lightens* it — haze scatters light into everything far away. Building
-  // the air first and then cutting near silhouettes out of it is what gives a
-  // grove depth; darkening things by distance only ever gives a flat wall.
+  const radius = new Float32Array(W * H);
   for (let y = 0; y < H; y++) {
-    const v = y / H;
     for (let x = 0; x < W; x++) {
-      const u = x / W;
-      const dl = Math.hypot((u - comp.light.x) * 1.15, v - comp.light.y);
-      // Light pools around the source and drains toward the floor.
-      let t = Math.pow(clamp01(1 - dl * 0.52), 1.9) * 1.0;
-      t += Math.pow(1 - clamp01(v), 2.4) * 0.16;
-      t *= 1 - smoothstep(0.6, 1.05, v) * 0.42;
-      field[y * W + x] = t;
-      depth[y * W + x] = 0;
-    }
-  }
-
-  /* ------------------------------------------------------- the canopy --- */
-
-  // A ceiling of leaves that the light has to find its way through. The gaps
-  // are what the shafts come from, so this is drawn before them.
-  for (let y = 0; y < H; y++) {
-    const v = y / H;
-    const ceiling = 1 - smoothstep(0.18, 0.62, v);
-    if (ceiling <= 0) continue;
-    for (let x = 0; x < W; x++) {
-      const n = canopy(x * 0.0016, y * 0.0034);
-      const leaf = smoothstep(0.38, 0.72, n) * ceiling;
       const p = y * W + x;
-      field[p] *= 1 - leaf * 0.45;
-      // Leaves catch light on their own edges.
-      field[p] += Math.pow(clamp01(n - 0.62), 1.4) * ceiling * 0.5;
+      let t = 0;
+      for (let i = 0; i < breaks.length; i++) {
+        const b = breaks[i];
+        const d = clamp01(Math.hypot((x - b.x) / b.rx, (y - b.y) / b.ry));
+        // Max, not sum: two gaps in a canopy do not add up where they overlap,
+        // and summing them would flood the mid-field into grey.
+        const v = Math.pow(1 - d, 1.75) * b.strength;
+        if (v > t) t = v;
+        if (i === 0) radius[p] = d;
+      }
+      field[p] = t * (0.82 + 0.18 * haze(x * 0.0009, y * 0.0016));
     }
   }
 
-  /* ------------------------------------------------------- the trunks --- */
+  /* Shafts. Light coming through a canopy arrives in radial streaks, and the
+     streaks are the strongest single cue that everything converges on one
+     point. Sampled on the unit circle so the noise is seamless in angle. */
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const p = y * W + x;
+      const d = radius[p];
+      const a = Math.atan2((y - zy) / ry, (x - zx) / rx);
+      const n = shafts(Math.cos(a) * 3.1 + 11, Math.sin(a) * 3.1 + 7);
+      // Nothing at the break itself (there is no shaft inside the light) and
+      // nothing at the rim (it has scattered out by then).
+      const profile = smoothstep(0.04, 0.26, d) * (1 - smoothstep(0.38, 1, d));
+      field[p] += smoothstep(0.44, 0.84, n) * profile * 0.62;
+    }
+  }
 
-  // Drawn back to front. Far trunks barely differ from the haze they stand in;
-  // near ones are cut to near-black and run past both edges of the frame.
-  const layers = [];
-  for (let i = 0; i < comp.trunks; i++) layers.push(Math.pow(rng(), 0.75));
-  layers.sort((a, b) => a - b);
+  /* Strata 0-1: the far canopy, behind the drawn wood. */
+  applyStrata(comp, field, nearness, strata.slice(0, 2));
 
-  for (const near of layers) {
-    let u = rng();
-    // Keep a corridor open down the middle for the light and the tree.
-    const pull = (u - comp.light.x) * 0.4;
-    u = clamp01(u + pull);
-    const x0 = u * W;
-    // Near trunks are enormous; far ones are saplings by comparison.
-    const width = W * lerp(0.003, 0.055, Math.pow(near, 2.4));
-    const lean = gaussian(rng, 0, 0.055);
-    const sway = gaussian(rng, 0, 0.9);
-    const phase = rng() * 9;
-    // Far trunks stop short of the floor; near ones run off it.
-    const foot = H * lerp(0.72, 1.15, near);
-    const crown = -H * lerp(0.02, 0.35, near);
+  /* The drawn branches: silhouette, with rim where they cross the bright sky. */
+  for (const s of segments) {
+    const pad = s.w0 + 3;
+    const minX = Math.max(0, Math.floor(Math.min(s.x0, s.x1) - pad));
+    const maxX = Math.min(W - 1, Math.ceil(Math.max(s.x0, s.x1) + pad));
+    const minY = Math.max(0, Math.floor(Math.min(s.y0, s.y1) - pad));
+    const maxY = Math.min(H - 1, Math.ceil(Math.max(s.y0, s.y1) + pad));
+    const abx = s.x1 - s.x0;
+    const aby = s.y1 - s.y0;
+    const lenSq = abx * abx + aby * aby || 1;
 
-    for (let y = 0; y < H; y++) {
-      if (y > foot) continue;
-      const along = clamp01((foot - y) / (foot - crown));
-      // The curve. A trunk that is a straight line reads as scaffolding.
-      const cx =
-        x0 + lean * along * W * 0.09 + Math.sin(along * 2.6 + phase) * sway * W * 0.012;
-      // Wide at the base, tapering as it climbs.
-      const w = width * lerp(1, 0.34, Math.pow(along, 0.8));
-      const soft = lerp(2.6, 1.05, near);
-      const lo = Math.max(0, Math.floor(cx - w * soft));
-      const hi = Math.min(W - 1, Math.ceil(cx + w * soft));
+    for (let y = minY; y <= maxY; y++) {
+      for (let x = minX; x <= maxX; x++) {
+        const apx = x + 0.5 - s.x0;
+        const apy = y + 0.5 - s.y0;
+        const t = clamp01((apx * abx + apy * aby) / lenSq);
+        const dx = apx - abx * t;
+        const dy = apy - aby * t;
+        const dist = Math.hypot(dx, dy);
+        const w = s.w0 + (s.w1 - s.w0) * t;
+        if (dist > w + 3) continue;
 
-      // Which way is the light from this trunk?
-      const lightSide = Math.sign(lx - cx) || 1;
-
-      for (let x = lo; x <= hi; x++) {
-        const signed = (x - cx) / w;
-        const d = Math.abs(signed);
-        if (d > soft) continue;
         const p = y * W + x;
-        // Far trunks dissolve into the haze; near ones have a hard edge.
-        const solid = 1 - smoothstep(soft * 0.35, soft, d);
-        const texture = 0.82 + 0.18 * bark(x * 0.02, y * 0.004);
+        // Feather inward from the edge rather than straddling it. A fixed
+        // +/-1.2px band never reaches solid=1 on a twig, so thin wood used to
+        // darken almost nothing while collecting a full-strength rim — which is
+        // exactly how a canopy turns into a diagram of glowing wires.
+        const solid = 1 - smoothstep(w * 0.5, w + 1, dist);
+        if (solid <= 0.002) continue;
 
-        // A trunk is a cylinder, and a cylinder has a lit side, a terminator
-        // and a dark side. Without this every trunk is one flat tone across
-        // its whole width and the grove reads as hanging curtains rather than
-        // as wood you could walk between — it is the single thing that decides
-        // whether the scene has volume.
-        const across = clamp01((signed * -lightSide) / soft * 0.5 + 0.5);
-        const round = Math.pow(across, 1.5);
-
-        // The lit side keeps more of the air behind it; the dark side takes
-        // the full silhouette.
-        const occlusion = lerp(0.22, 0.97, near) * texture * lerp(1, 0.42, round);
-        field[p] *= 1 - solid * occlusion;
-
-        // Grazing light along the lit edge, and a colder bounce on the far one
-        // so the dark side never goes completely dead.
-        const grazing = Math.pow(across, 7) * solid;
-        const bounce = Math.pow(1 - across, 5) * solid;
-        field[p] += grazing * lerp(0.3, 0.11, near) + bounce * lerp(0.05, 0.02, near);
-
-        if (near > depth[p]) depth[p] = near;
+        // Near limbs are absolute silhouette; far ones let a little sky through.
+        field[p] *= 1 - solid * lerp(0.8, 0.97, s.depth);
+        // Light wraps around a *thick* occluder. A twig has no cross-section to
+        // wrap around, so it simply goes black; only real limbs earn a rim.
+        const rimGain = smoothstep(3, 16, w) * 0.4;
+        if (rimGain > 0) {
+          const edge = Math.exp(-Math.abs(dist - w) * 0.9) * solid;
+          field[p] += edge * rimGain * Math.pow(1 - radius[p], 1.5);
+        }
+        if (s.depth > nearness[p]) nearness[p] = s.depth;
       }
     }
   }
 
-  /* --------------------------------------------------- the near edges --- */
+  /* Strata 2-3: the near canopy, over everything, a metre above your face. */
+  applyStrata(comp, field, nearness, strata.slice(2));
 
-  // Two trunks close enough to be out of focus, hard against the frame edges.
-  // A grove only overwhelms once something in it is nearer than the viewer
-  // expects — that is what puts them inside the scene rather than in front of
-  // a picture of it.
-  for (const edge of [-1, 1]) {
-    const x0 = edge < 0 ? W * lerp(-0.02, 0.06, rng()) : W * lerp(0.94, 1.02, rng());
-    const width = W * lerp(0.06, 0.095, rng());
-    const lean = gaussian(rng, 0, 0.03);
-    for (let y = 0; y < H; y++) {
-      const along = 1 - y / H;
-      const cx = x0 + lean * along * W * 0.05;
-      const w = width * lerp(1, 0.6, Math.pow(along, 0.7));
-      const lo = Math.max(0, Math.floor(cx - w * 1.6));
-      const hi = Math.min(W - 1, Math.ceil(cx + w * 1.6));
-      for (let x = lo; x <= hi; x++) {
-        const d = Math.abs(x - cx) / w;
-        if (d > 1.6) continue;
-        const p = y * W + x;
-        // Soft-edged, because at this distance it is thoroughly defocused.
-        const solid = 1 - smoothstep(0.35, 1.6, d);
-        field[p] *= 1 - solid * 0.97;
-        depth[p] = 1;
-      }
-    }
-  }
-
-  /* -------------------------------------------------------- the light --- */
-
-  for (let n = 0; n < comp.rays; n++) {
-    const spread = (n / (comp.rays - 1) - 0.5) * 2;
-    const angle = spread * 0.5 + gaussian(rng, 0, 0.06);
-    const power = lerp(0.35, 1, 1 - Math.abs(spread)) * lerp(0.5, 1, rng());
-    const halfWidth = W * lerp(0.008, 0.032, rng());
-
-    for (let y = 0; y < H; y++) {
-      const travel = (y - ly) / (H - ly);
-      if (travel < 0) continue;
-      const bend = Math.sin(travel * 2.1) * 0.07;
-      const cx = lx + (angle + bend) * travel * W * 0.55;
-      const w = halfWidth * lerp(0.4, 3, travel);
-      const fade = Math.pow(1 - clamp01(travel), 1.7);
-      const lo = Math.max(0, Math.floor(cx - w));
-      const hi = Math.min(W - 1, Math.ceil(cx + w));
-      for (let x = lo; x <= hi; x++) {
-        const d = Math.abs(x - cx) / w;
-        field[y * W + x] += Math.pow(1 - d, 3) * fade * power * 0.34;
-      }
-    }
-  }
-
-  /* The source's halo, just above the frame. */
+  /* The break itself. Broad rather than fierce — a hot pinprick reads as a
+     lens flare, a wide pool reads as sky. */
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
-      const d = Math.hypot((x - lx) / (W * 0.34), (y - ly) / (H * 0.7));
-      if (d > 1) continue;
-      field[y * W + x] += Math.pow(1 - d, 2.4) * 0.75;
-    }
-  }
-
-  /* The floor.
-   *
-   * Without a ground plane the trunks and the tree hang in a void — the eye
-   * has nothing to stand the scene on. This is a receding plane: bright where
-   * the shafts land on it, falling off with distance from them, mottled with
-   * litter. */
-  // No horizon line: the ground has to arrive as a gradient. A hard start
-  // reads as a stage floor and cuts the frame in two.
-  for (let y = Math.floor(H * 0.6); y < H; y++) {
-    const v = y / H;
-    const onto = smoothstep(0.62, 0.94, v);
-    if (onto <= 0) continue;
-    const into = clamp01((v - 0.72) / 0.28);
-    for (let x = 0; x < W; x++) {
-      const u = x / W;
       const p = y * W + x;
-      // Light pools where the shafts meet the floor and drains outward.
-      const pool = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 2.4), 3);
-      const litter = 0.55 + 0.45 * canopy(x * 0.005 + 90, y * 0.014);
-      // The plane tips away: the near floor is below the light, not in it.
-      const recede = Math.pow(1 - into, 2.2);
-      field[p] = field[p] * lerp(1, 0.5, onto * into) + pool * recede * litter * onto * 0.34;
+      // Tear the edge of the pool. A gap in a canopy is a hole with leaves
+      // around it, so its boundary is ragged; a clean ellipse of light reads as
+      // a moon, or worse, as a lens flare put there in post.
+      const wob = 0.84 + 0.3 * haze(x * 0.0024 + 31, y * 0.0024 + 17);
+      const d = radius[p];
+      field[p] += Math.pow(clamp01(1 - d / (0.34 * wob)), 2.1) * 0.8;
+      field[p] += Math.pow(clamp01(1 - d / (0.78 * wob)), 2.6) * 0.3;
     }
   }
 
-  /* Ground mist, drifting. */
-  for (let y = 0; y < H; y++) {
-    const v = y / H;
-    const band = smoothstep(0.5, 0.88, v) * (1 - smoothstep(0.9, 1.02, v));
-    if (band <= 0) continue;
-    for (let x = 0; x < W; x++) {
-      const u = x / W;
-      const drift = 0.55 + 0.45 * canopy(x * 0.0022 + 40, y * 0.006);
-      const toward = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 1.35), 2);
-      field[y * W + x] += band * drift * toward * 0.3;
-    }
-  }
-
-  /* The photograph, folded in as organic mottling only. */
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 3;
-      const lum = Math.pow(
-        (0.2126 * forest[i] + 0.7152 * forest[i + 1] + 0.0722 * forest[i + 2]) / 255,
-        2.2,
-      );
-      const p = y * W + x;
-      // Multiplicative, centred on 1: it varies the grove without redrawing it.
-      field[p] *= 0.86 + Math.pow(lum, 0.5) * 0.34;
-    }
-  }
-
-  /* The glow the tree stands in. */
-  const glowR = comp.treeHeight * H * 0.65;
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const d = Math.hypot(x - rootX, (y - rootY) * 1.4) / glowR;
-      if (d > 1) continue;
-      field[y * W + x] += Math.pow(1 - d, 2.8) * 0.6;
-    }
-  }
-
-  /* A shoulder before anything is read as colour.
-   *
-   * Every term above is additive, so lit regions run well past 1 and the ramp
-   * would pin them to the sun — turning each soft falloff into a hard-edged
-   * white wedge. The extended Reinhard form rolls the shoulder off while still
-   * letting the brightest zone reach the warm end of the ramp. */
-  // One exposure control, applied once. Every term above is relative; chasing
-  // brightness by re-tuning each of them individually just moves the problem.
-  const EXPOSURE = 2.6;
-  const WHITE = 2.6;
+  /* Shoulder, then vignette and the copy's quiet. Every term above is additive,
+     so the bright areas run well past 1; an extended Reinhard with a white
+     point rolls them off instead of clipping soft falloff into a hard wedge. */
+  const EXPOSURE = 2.05;
+  const WHITE = 2.4;
   for (let i = 0; i < field.length; i++) {
     const f = Math.max(0, field[i]) * EXPOSURE;
     field[i] = (f * (1 + f / (WHITE * WHITE))) / (1 + f);
   }
-
-  /* Vignette and the copy's quiet. */
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const u = x / W;
       const v = y / H;
-      const vig = 1 - Math.pow(Math.hypot((u - 0.5) * 1.02, (v - 0.5) * 0.98), 3.2) * 0.7;
+      const vig = 1 - Math.pow(Math.hypot((u - 0.5) * 1.02, (v - 0.5) * 0.96), 2.4) * 0.72;
       field[y * W + x] *= clamp01(vig) * (1 - safeMultiplier(comp, x, y));
     }
   }
 
-  return { field, depth };
+  return { field, nearness };
+}
+
+function applyStrata(comp, field, nearness, layers) {
+  const { width: W, height: H } = comp;
+  for (const layer of layers) {
+    const { clumpFbm, leafFbm, clump, leaf, cover, opacity, depth, glow } = layer;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        // Where a mass of leaves hangs...
+        const density = smoothstep(0.34, 0.72, clumpFbm(x * clump, y * clump * 1.15));
+        // ...and which leaves inside it are lit. The clump only moves the
+        // threshold; it never draws a shape of its own, so no edge in the image
+        // is ever bigger than a leaf cluster.
+        const n = leafFbm(x * leaf, y * leaf * 1.18);
+        const threshold = cover - density * 0.34;
+        const mass = smoothstep(threshold, threshold + LEAF_EDGE, n);
+        if (mass <= 0.002) continue;
+        const p = y * W + x;
+        const behind = field[p];
+        field[p] = behind * (1 - mass * opacity);
+        // A leaf is translucent at its edge and opaque at its middle: the light
+        // behind it survives around the rim. That filament, not the silhouette,
+        // is what makes foliage read as foliage.
+        field[p] += mass * (1 - mass) * 4 * glow * behind * 0.55;
+        if (mass > 0.5 && depth > nearness[p]) nearness[p] = depth;
+      }
+    }
+  }
 }
 
 /* --------------------------------------------------------------- stipple --- */
 
 /**
- * Render the field as points.
+ * Points, not pixels.
  *
- * Placement is stratified with jitter — near enough to blue noise that no
- * pattern emerges, and far cheaper than a real relaxation. Each candidate
- * survives with probability proportional to the local light, so density *is*
- * the image. Size falls with depth and rises slightly in the highlights, which
- * is what makes near trunks feel coarse and the far canopy feel like air.
+ * Nothing snaps to a grid, so form stays curved. Density does most of the
+ * drawing — points crowd into the light and scatter into the dark — but the
+ * dark is never emptied entirely: a shadow made of sparse cold points reads as
+ * material, and a shadow made of no points reads as a hole in the canvas.
  */
-function stipple(canvas, comp, field, depth, rng, count) {
+function stipple(canvas, comp, field, nearness, rng, count) {
   const { width: W, height: H } = comp;
-  const cells = Math.ceil(Math.sqrt(count));
+  const cells = Math.ceil(Math.sqrt((count * W) / H));
+  const rows = Math.ceil(count / cells);
   const stepX = W / cells;
-  const stepY = H / cells;
+  const stepY = H / rows;
 
-  for (let gy = 0; gy < cells; gy++) {
+  for (let gy = 0; gy < rows; gy++) {
     for (let gx = 0; gx < cells; gx++) {
       const x = (gx + rng()) * stepX;
       const y = (gy + rng()) * stepY;
@@ -509,151 +533,101 @@ function stipple(canvas, comp, field, depth, rng, count) {
       const p = py * W + px;
 
       const t = clamp01(field[p]);
-      // Survival curve: the dark keeps a scattering of points so it reads as
-      // air rather than as a hole, but the light is where the ink goes.
-      const survive = Math.pow(t, 0.92) * 0.99 + 0.025;
+      const survive = 0.34 + 0.66 * Math.pow(t, 0.62);
       if (rng() > survive) continue;
 
-      const d = depth[p];
-      // Slight tone jitter per point. Perfectly uniform colour is what makes
-      // computed stipple look computed.
-      const tone = clamp01(t + gaussian(rng, 0, 0.045));
-      const colour = ramp(tone);
+      const tone = clamp01(t + gaussian(rng, 0, 0.035));
+      const colour = sky(tone);
+      const near = nearness[p];
 
-      // Warm the highlights and cool the shadows a further step apart — the
-      // ramp already does this, and pushing it at the extremes is what makes
-      // the image feel lit rather than tinted.
+      // Push the ends further apart than the ramp already does: cold shadows
+      // colder, warm light warmer. This temperature contrast is what the whole
+      // image rests on.
       const warm = smoothstep(0.6, 1, tone);
-      const cool = 1 - smoothstep(0.05, 0.45, tone);
+      const cool = 1 - smoothstep(0.03, 0.36, tone);
       const c = [
-        colour[0] * (1 + warm * 0.18 - cool * 0.25),
+        colour[0] * (1 + warm * 0.22 - cool * 0.28),
         colour[1] * (1 + warm * 0.06),
-        colour[2] * (1 - warm * 0.22 + cool * 0.3),
+        colour[2] * (1 - warm * 0.26 + cool * 0.42),
       ];
 
-      const radius = lerp(0.55, 2.3, Math.pow(d, 1.4)) * lerp(0.85, 1.3, tone);
-      const intensity = lerp(0.3, 1.5, tone) * lerp(1, 0.72, d);
+      // Near foliage is coarse and out of focus; far sky is fine grain.
+      const radius = lerp(0.62, 2.9, Math.pow(near, 1.2)) * lerp(0.92, 1.2, tone);
+      const intensity = lerp(0.2, 1.35, Math.pow(tone, 1.05));
       canvas.point(x, y, radius, c, intensity);
     }
   }
 }
 
-/* ------------------------------------------------------------------ tree --- */
-
-/** Points of the tree, in tree-local units, with their growth order. */
-function treeParticles(tree, rng, count) {
-  const weights = tree.segments.map((s) => {
-    const len = Math.hypot(s.x1 - s.x0, s.y1 - s.y0);
-    return len * Math.pow((s.w0 + s.w1) * 0.5, 0.55);
-  });
-  const total = weights.reduce((a, b) => a + b, 0);
-  const cdf = [];
-  let acc = 0;
-  for (const w of weights) {
-    acc += w / total;
-    cdf.push(acc);
-  }
-  const pick = (r) => {
-    let lo = 0;
-    let hi = cdf.length - 1;
-    while (lo < hi) {
-      const mid = (lo + hi) >> 1;
-      if (cdf[mid] < r) lo = mid + 1;
-      else hi = mid;
-    }
-    return lo;
-  };
-
-  const out = [];
-  const wood = Math.round(count * 0.4);
-
-  for (let i = 0; i < wood; i++) {
-    const seg = tree.segments[pick(rng())];
-    const t = rng();
-    const birth = lerp(seg.p0, seg.p1, t);
-    const w = lerp(seg.w0, seg.w1, t);
-    const spread = lerp(0.5, 2.1, Math.pow(birth, 1.5));
-    const off = (rng() + rng() + rng() - 1.5) * spread;
-    const core = clamp01(1 - Math.abs(off) / 1.4);
-    out.push({
-      x: lerp(seg.x0, seg.x1, t) + off * w,
-      y: lerp(seg.y0, seg.y1, t) + gaussian(rng, 0, w * 0.4 * spread),
-      birth,
-      // Heartwood burns near white; the outer wood cools to jade.
-      tone: lerp(0.58, 0.93, core * core) * lerp(1, 0.86, birth),
-      alpha: lerp(0.06, 0.24, core * core) * lerp(1, 0.66, birth),
-      radius: lerp(0.6, 1.5, core),
-    });
-  }
-
-  const densityTotal = tree.clusters.reduce((a, c) => a + c.density, 0) || 1;
-  for (const cl of tree.clusters) {
-    const n = Math.round(((count - wood) * cl.density) / densityTotal);
-    for (let i = 0; i < n; i++) {
-      const ang = rng() * Math.PI * 2;
-      const rad = Math.pow(rng(), 0.45) * cl.r * lerp(0.8, 1.4, rng());
-      const falloff = clamp01(1 - rad / (cl.r * 1.4));
-      out.push({
-        x: cl.x + Math.cos(ang) * rad,
-        y: cl.y + Math.sin(ang) * rad * 0.82,
-        birth: clamp01(cl.path + rng() * 0.06),
-        tone: lerp(0.52, 0.8, falloff),
-        alpha: Math.pow(falloff, 1.2) * lerp(0.05, 0.18, rng()) * cl.density,
-        radius: lerp(0.55, 1.1, rng()),
-      });
-    }
-  }
-
-  return out;
-}
+/* --------------------------------------------------------------- growth --- */
 
 /**
- * The growth, pre-rendered as frames.
+ * The vault closing over the viewer.
  *
- * Every point knows its distance from the root along the wood, so thresholding
- * that value frame by frame grows the tree through its own branches. The
- * browser plays it with a CSS steps() function — there is no engine.
+ * Branches open along their own wood, outward from the trunks at the frame's
+ * edge. Pre-rendered to frames; the browser plays it with CSS steps().
+ *
+ * The plate draws this same wood as silhouette, so the animation must not draw
+ * it as line — a bright stroke laid over its own dark shape reads as a cable
+ * diagram thrown across the artwork. What it draws instead is the light
+ * *catching* along the wood as it arrives: a thin warm filament, brightest
+ * near the break and gone entirely at the corners, because that is where the
+ * backlight is. The final frame has to survive being held still under reduced
+ * motion, so it is built to be a permanent, barely-there rim rather than an
+ * effect that needs to fade out.
  */
-function renderGrowth(comp, tree, rng) {
+function renderGrowth(comp, segments, rng) {
   const { width: W, height: H } = comp;
-  const scale = (comp.treeHeight * H) / tree.bounds.maxY;
-  const rootX = comp.root.x * W;
-  const rootY = comp.root.y * H;
-
-  const margin = scale * 0.14;
-  const left = rootX + tree.bounds.minX * scale - margin;
-  const right = rootX + tree.bounds.maxX * scale + margin;
-  const top = rootY - tree.bounds.maxY * scale - margin;
-  const bottom = rootY - tree.bounds.minY * scale + margin;
-
-  // Frames render at half the plate's resolution: the sheet is 32 frames deep
-  // and the tree is soft-edged, so the halving is invisible and the file is a
-  // quarter the size.
-  const SS = 2;
-  const fw = Math.ceil((right - left) / SS);
-  const fh = Math.ceil((bottom - top) / SS);
-  const particles = treeParticles(tree, rng, Math.round(fw * fh * 0.85));
+  const SS = 3;
+  const fw = Math.ceil(W / SS);
+  const fh = Math.ceil(H / SS);
   const sheet = Buffer.alloc(fw * fh * GROWTH_FRAMES * 4);
+  const zx = comp.zenith.x * W;
+  const zy = comp.zenith.y * H;
+  const rx = W * comp.spread.x;
+  const ry = H * comp.spread.y;
+
+  const particles = [];
+  const budget = Math.round(fw * fh * 0.3);
+  const weights = segments.map((s) => Math.hypot(s.x1 - s.x0, s.y1 - s.y0) * s.w0);
+  const total = weights.reduce((a, b) => a + b, 0) || 1;
+
+  for (let i = 0; i < budget; i++) {
+    let r = rng() * total;
+    let idx = 0;
+    while (idx < segments.length - 1 && (r -= weights[idx]) > 0) idx++;
+    const s = segments[idx];
+    const t = rng();
+    const w = s.w0 + (s.w1 - s.w0) * t;
+    const off = (rng() + rng() + rng() - 1.5) * 1.1;
+    const core = clamp01(1 - Math.abs(off));
+    const x = s.x0 + (s.x1 - s.x0) * t + off * w;
+    const y = s.y0 + (s.y1 - s.y0) * t;
+    // Only the wood near the break is lit. Everything out at the corners is
+    // behind the viewer's head, and nothing there has any light on it.
+    const lit = Math.pow(clamp01(1 - Math.hypot((x - zx) / rx, (y - zy) / ry)), 1.7);
+    if (lit < 0.02) continue;
+    particles.push({
+      x: x / SS,
+      y: (y + gaussian(rng, 0, w * 0.5)) / SS,
+      birth: s.p0 + (s.p1 - s.p0) * t,
+      tone: lerp(0.7, 0.97, core),
+      alpha: lerp(0.01, 0.05, core) * lit,
+      radius: lerp(0.5, 1.25, core),
+    });
+  }
 
   for (let f = 0; f < GROWTH_FRAMES; f++) {
     const t = f / (GROWTH_FRAMES - 1);
     const growth = t * t * (3 - 2 * t);
     const frame = new Canvas(fw, fh);
-
     for (const p of particles) {
       if (p.birth > growth) continue;
-      // Points flare as they open, then settle — germination, not a fade-in.
-      const age = clamp01((growth - p.birth) * 5);
-      const flare = 1 + (1 - age) * 0.6;
-      frame.point(
-        (rootX + p.x * scale - left) / SS,
-        (rootY - p.y * scale - top) / SS,
-        p.radius * 0.85 + 0.4,
-        ramp(p.tone),
-        p.alpha * (0.4 + 0.6 * age) * flare,
-      );
+      // A point flares as it arrives and then settles to its resting value —
+      // the flare is the growth, the resting value is the rim that stays.
+      const age = clamp01((growth - p.birth) * 4.5);
+      frame.point(p.x, p.y, p.radius, sky(p.tone), p.alpha * (0.4 + 0.6 * age) * (1 + 1.1 * (1 - age)));
     }
-
     const base = f * fw * fh * 4;
     for (let i = 0; i < fw * fh; i++) {
       let peak = 0;
@@ -663,9 +637,7 @@ function renderGrowth(comp, tree, rng) {
         sheet[base + i * 4 + c] = enc;
         if (enc > peak) peak = enc;
       }
-      // Alpha follows the brightest channel, so the sprite composites over the
-      // plate without a black box around it.
-      sheet[base + i * 4 + 3] = Math.min(255, Math.round(peak * 1.25));
+      sheet[base + i * 4 + 3] = Math.min(255, Math.round(peak * 1.3));
     }
   }
 
@@ -674,7 +646,7 @@ function renderGrowth(comp, tree, rng) {
     frameWidth: fw,
     frameHeight: fh,
     frames: GROWTH_FRAMES,
-    rect: { x: left / W, y: top / H, width: (right - left) / W, height: (bottom - top) / H },
+    rect: { x: 0, y: 0, width: 1, height: 1 },
   };
 }
 
@@ -686,9 +658,7 @@ function encode(canvas) {
   for (let p = 0; p < width * height; p++) {
     for (let c = 0; c < 3; c++) {
       const v = data[p * 3 + c];
-      // Reinhard shoulder: the shafts can pile up without clipping to white.
-      const mapped = v / (1 + v * 0.42);
-      out[p * 4 + c] = Math.round(Math.pow(clamp01(mapped), 1 / 2.2) * 255);
+      out[p * 4 + c] = Math.round(Math.pow(clamp01(v / (1 + v * 0.5)), 1 / 2.2) * 255);
     }
     out[p * 4 + 3] = 255;
   }
@@ -698,32 +668,29 @@ function encode(canvas) {
 /* ------------------------------------------------------------------ main --- */
 
 async function main() {
-  console.log("ALSOS grove");
+  console.log("ALSOS vault");
   await mkdir(OUT, { recursive: true });
 
-  const tree = generateTree({ seed: SEED, spread: 0.46, depth: 8 });
-  await writeFile(path.join(OUT, "tree-skeleton.json"), JSON.stringify(serializeTree(tree)));
-
-  const entries = [];
   const only = process.env.HERO_ONLY;
+  const entries = [];
+
   for (const comp of COMPOSITIONS.filter((c) => !only || c.id === only)) {
     const t0 = Date.now();
     const dir = path.join(OUT, comp.id);
     await mkdir(dir, { recursive: true });
 
     const rng = makeRng(`${SEED}:${comp.id}`);
-    const forest = await loadForest(path.join(SRC, "forest.jpg"), comp.width, comp.height, comp.forestFocus);
-    const { field, depth } = buildField(comp, forest, rng);
+    const segments = growCanopy(comp, rng);
+    const { field, nearness } = buildField(comp, segments);
 
     const canvas = new Canvas(comp.width, comp.height);
-    stipple(canvas, comp, field, depth, rng, comp.points);
+    stipple(canvas, comp, field, nearness, rng, comp.points);
+    const growth = renderGrowth(comp, segments, makeRng(`${SEED}:growth:${comp.id}`));
 
-    const growth = renderGrowth(comp, tree, makeRng(`${SEED}:tree:${comp.id}`));
     const base = sharp(encode(canvas), {
       raw: { width: comp.width, height: comp.height, channels: 4 },
     });
-
-    const name = `grove-${comp.id}`;
+    const name = `vault-${comp.id}`;
     const widths = [0.4, 0.6, 0.8, 1].map((f) => Math.round((comp.width * f) / 2) * 2);
     const avif = [];
     const webp = [];
@@ -740,7 +707,7 @@ async function main() {
       raw: { width: growth.frameWidth, height: growth.frameHeight * growth.frames, channels: 4 },
     })
       .png({ compressionLevel: 9 })
-      .toFile(path.join(dir, `tree-${comp.id}.png`));
+      .toFile(path.join(dir, `canopy-${comp.id}.png`));
 
     const lqip = await base.clone().resize(16).webp({ quality: 50 }).toBuffer();
 
@@ -752,27 +719,25 @@ async function main() {
       poster: { avif, webp },
       lqip: `data:image/webp;base64,${lqip.toString("base64")}`,
       growth: {
-        src: `/assets/hero/${comp.id}/tree-${comp.id}.png`,
+        src: `/assets/hero/${comp.id}/canopy-${comp.id}.png`,
         frames: growth.frames,
         frameWidth: growth.frameWidth,
         frameHeight: growth.frameHeight,
         rect: growth.rect,
       },
-      root: comp.root,
-      light: comp.light,
-      treeHeight: comp.treeHeight,
+      zenith: comp.zenith,
       safe: comp.safe,
     });
 
     console.log(
-      `  ${comp.id} (${comp.width}x${comp.height}) — ${(comp.points / 1000).toFixed(0)}k points in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
+      `  ${comp.id} (${comp.width}x${comp.height}) — ${segments.length} limbs, ${(comp.points / 1000000).toFixed(1)}M points in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
     );
   }
 
   if (only) return;
 
-  await sharp(path.join(OUT, "desktop", "grove-desktop.webp"))
-    .extract({ left: Math.round(3200 * 0.3), top: 0, width: Math.round(3200 * 0.48), height: 1260 })
+  await sharp(path.join(OUT, "desktop", "vault-desktop.webp"))
+    .extract({ left: Math.round(3200 * 0.34), top: 0, width: Math.round(3200 * 0.48), height: 1260 })
     .resize(1200, 630, { fit: "cover" })
     .jpeg({ quality: 88 })
     .toFile(path.join(OUT, "og-image-1200x630.jpg"));
@@ -780,15 +745,7 @@ async function main() {
   await writeFile(
     path.join(OUT, "manifest.json"),
     JSON.stringify(
-      {
-        version: 3,
-        seed: SEED,
-        generatedBy: "scripts/build-hero.mjs",
-        sources: { forest: "art/source/forest.jpg" },
-        skeleton: "/assets/hero/tree-skeleton.json",
-        og: "/assets/hero/og-image-1200x630.jpg",
-        compositions: entries,
-      },
+      { version: 4, seed: SEED, generatedBy: "scripts/build-hero.mjs", og: "/assets/hero/og-image-1200x630.jpg", compositions: entries },
       null,
       2,
     ),

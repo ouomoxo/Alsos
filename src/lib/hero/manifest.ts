@@ -33,21 +33,20 @@ export type HeroComposition = {
   };
   /** Inline blur placeholder so the frame is never empty. */
   lqip: string;
-  /** Normalised anchor where the tree meets the ground. */
-  root: { x: number; y: number };
-  light: { x: number; y: number };
-  treeHeight: number;
+  /**
+   * Normalised position of the break in the canopy — the point everything in
+   * the plate converges on. DOM layers that need to agree with the light
+   * (the motes' mask, any glow) read it from here rather than guessing.
+   */
+  zenith: { x: number; y: number };
   safe: SafeArea[];
 };
 
 export type HeroManifest = {
   version: number;
   seed: string;
-  skeleton: string;
   og: string;
   compositions: HeroComposition[];
-  /** Source photograph the grove's mottling is drawn from. */
-  sources: { forest: string };
 };
 
 export const heroManifest = manifestJson as HeroManifest;
@@ -67,7 +66,7 @@ export function compositionById(id: string): HeroComposition {
   return found;
 }
 
-/** The composition the WebGL layer aligns to for a given viewport aspect. */
-export function pickComposition(width: number, height: number): HeroComposition {
+/** The composition a given viewport resolves to, matching the poster's media. */
+export function pickComposition(width: number): HeroComposition {
   return compositionById(width < 768 ? "mobile" : "desktop");
 }

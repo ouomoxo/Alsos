@@ -15,9 +15,23 @@ export function HeroPoster() {
   // The desktop frame is the <img> fallback, used when a browser ignores
   // every <source>.
   const fallback = compositionById("desktop");
+  // <source> swaps the bitmap but object-position lives on the <img>, so each
+  // composition's own zenith has to be available to the media query below.
+  const small = compositionById("mobile");
 
   return (
-    <div className={styles.poster} aria-hidden="true">
+    <div
+      className={styles.poster}
+      aria-hidden="true"
+      style={
+        {
+          "--anchor-x": `${fallback.zenith.x * 100}%`,
+          "--anchor-y": `${fallback.zenith.y * 100}%`,
+          "--anchor-x-sm": `${small.zenith.x * 100}%`,
+          "--anchor-y-sm": `${small.zenith.y * 100}%`,
+        } as React.CSSProperties
+      }
+    >
       <picture>
         {heroCompositions.map((comp) => (
           <source
