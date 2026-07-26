@@ -1,0 +1,116 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-width: 1100px;
+}
+
+.heading {
+  /* Korean title: body face, not the Latin-only display face. */
+  font-family: var(--font-body);
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.lede {
+  margin-top: var(--space-4);
+  color: var(--alsos-text-secondary);
+}
+
+.notice {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) dashed var(--alsos-border-default);
+  color: var(--alsos-text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.list {
+  border-top: var(--border-width) solid var(--alsos-border-subtle);
+}
+
+.item {
+  border-bottom: var(--border-width) solid var(--alsos-border-subtle);
+}
+
+.link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-4);
+  min-height: 72px;
+  padding-block: var(--space-5, 1.25rem);
+}
+
+.link:hover .title {
+  color: var(--alsos-spore);
+}
+
+.number {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.title {
+  color: var(--alsos-text-primary);
+  font-size: var(--text-body-lg);
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.objective {
+  color: var(--alsos-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  grid-column: 2;
+}
+
+.domain {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.difficulty {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+
+.pip {
+  width: var(--dot-md);
+  height: var(--dot-md);
+  background: var(--alsos-surface-raised);
+}
+
+.pip[data-on="true"] {
+  background: var(--alsos-lichen);
+}
+
+@media (min-width: 768px) {
+  .link {
+    grid-template-columns: 3rem minmax(0, 1fr) auto;
+  }
+
+  .meta {
+    grid-column: auto;
+    justify-content: flex-end;
+  }
+}

@@ -1,0 +1,141 @@
+/**
+ * ALSOS design tokens v0.1
+ *
+ * Single source of truth. Components read these; nothing hardcodes a hex.
+ * Colours re-sample against the shipped hero art (scripts/generate-hero-assets.mjs
+ * writes the sampled palette to assets/hero/manifest.json) so DOM chrome and
+ * artwork stay in the same light.
+ */
+
+:root {
+  /* Core backgrounds */
+  --alsos-void: #070908;
+  --alsos-night: #0b0f0c;
+  --alsos-canopy: #111811;
+  --alsos-surface: #172016;
+  --alsos-surface-raised: #1d271a;
+
+  /* Forest spectrum */
+  --alsos-moss-deep: #26301f;
+  --alsos-moss: #68743c;
+  --alsos-lichen: #aeb760;
+  --alsos-spore: #d9dd7a;
+  --alsos-spore-bright: #e5e98d;
+
+  /* Text */
+  --alsos-text-primary: #f1f2ea;
+  --alsos-text-secondary: #a8ad9d;
+  --alsos-text-tertiary: #747b6e;
+  --alsos-text-inverse: #0b0f0c;
+
+  /* Functional */
+  --alsos-success: #b8c66d;
+  --alsos-warning: #d1a75a;
+  --alsos-danger: #c56f64;
+  --alsos-info: #86a7a0;
+
+  /* Borders */
+  --alsos-border-subtle: rgba(217, 221, 122, 0.14);
+  --alsos-border-default: rgba(217, 221, 122, 0.28);
+  --alsos-border-active: rgba(217, 221, 122, 0.72);
+
+  /* Glow */
+  --alsos-glow-soft: 0 0 24px rgba(217, 221, 122, 0.12);
+  --alsos-glow-active: 0 0 36px rgba(217, 221, 122, 0.24);
+
+  /* Typography */
+  --font-display: "ALSOS Grid", "Silkscreen", "Departure Mono", monospace;
+  --font-body: "Pretendard Variable", "Noto Sans KR", sans-serif;
+  --font-ui: "Geist Mono Variable", "IBM Plex Mono", monospace;
+  --font-code: "JetBrains Mono", "IBM Plex Mono", monospace;
+  /* Small UI labels that contain Korean. The mono UI face carries no Hangul,
+     so Korean set in it falls back mid-string and the wide Latin tracking
+     pulls syllable blocks apart. Latin/numeric labels keep --font-ui. */
+  --font-label: var(--font-body);
+
+  /* Type scale */
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 1rem;
+  --text-body-lg: 1.125rem;
+  --text-h3: clamp(1.75rem, 3vw, 3rem);
+  --text-h2: clamp(3rem, 6vw, 6.5rem);
+  --text-hero: clamp(4rem, 8.5vw, 9rem);
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+  --space-48: 12rem;
+
+  /* Geometry — small corners or none. No capsules, no giant rounded cards. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --border-width: 1px;
+
+  /* Motion */
+  --motion-instant: 100ms;
+  --motion-control: 180ms;
+  --motion-reveal: 620ms;
+  --motion-scene: 1400ms;
+  --motion-ambient: 18000ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-organic: cubic-bezier(0.33, 0, 0.2, 1);
+
+  /* Layout */
+  --container-max: 1680px;
+  --gutter-desktop: 64px;
+  --gutter-tablet: 32px;
+  --gutter-mobile: 20px;
+  --gutter: var(--gutter-mobile);
+
+  /* Dot grammar — 1px spore, 2px particle, 4px node, 8px+ only for specials */
+  --dot-xs: 1px;
+  --dot-sm: 2px;
+  --dot-md: 4px;
+
+  /* Controls — §6.1 minimums */
+  --control-height: 48px;
+  --target-min: 44px;
+
+  /* Chrome */
+  --header-height: 72px;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --gutter: var(--gutter-tablet);
+    --header-height: 80px;
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --gutter: var(--gutter-desktop);
+    --header-height: 90px;
+  }
+}
+
+/**
+ * Visual-regression mode (?visualTest=1) freezes everything that would make two
+ * screenshots differ. Set as an attribute on <html> so CSS and JS agree.
+ */
+:root[data-visual-test="1"] {
+  --motion-ambient: 0ms;
+}
+
+:root[data-visual-test="1"] *,
+:root[data-visual-test="1"] *::before,
+:root[data-visual-test="1"] *::after {
+  animation-play-state: paused !important;
+  transition: none !important;
+}

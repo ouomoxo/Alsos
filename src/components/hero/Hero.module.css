@@ -1,0 +1,277 @@
+/**
+ * Hero layout — §3.1 composition and §14 responsive rules.
+ *
+ * The frame is the 12-column field: copy on 1-4, art breathing through the
+ * middle, platform state on 11-12. The art is a background layer, so the grid
+ * here only positions text.
+ */
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-height: 100svh;
+  background: var(--alsos-void);
+  overflow: hidden;
+}
+
+.content {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  width: 100%;
+  max-width: var(--container-max);
+  min-height: 100svh;
+  margin-inline: auto;
+  padding: calc(var(--header-height) + var(--space-8)) var(--gutter) var(--space-12);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 1fr auto;
+  align-content: end;
+  gap: var(--space-8) var(--space-6);
+}
+
+/* ------------------------------------------------------------------ copy -- */
+
+.copy {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  /* The copy sits on art that was composed dark behind it — no scrim needed. */
+}
+
+.headline {
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-display);
+  font-size: var(--text-hero);
+  line-height: 0.92;
+  letter-spacing: -0.01em;
+  /* Bright, but never brighter than the tree: the eye must land on the art
+     first (§3.1). */
+  color: var(--alsos-text-primary);
+}
+
+.headlineLine {
+  display: block;
+  /* Settles in with a 12px rise at 200ms (§10.5). Content is readable the
+     whole time — this animates position, never visibility of information. */
+  animation: headline-rise var(--motion-reveal) var(--ease-out) backwards;
+}
+
+.headlineLine:nth-child(1) {
+  animation-delay: 200ms;
+}
+.headlineLine:nth-child(2) {
+  animation-delay: 280ms;
+}
+.headlineLine:nth-child(3) {
+  animation-delay: 360ms;
+}
+
+@keyframes headline-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.description {
+  margin-top: var(--space-6);
+  max-width: 42ch;
+  color: var(--alsos-text-secondary);
+  font-size: var(--text-body-lg);
+  line-height: 1.65;
+}
+
+/* ------------------------------------------------------------------- CTA -- */
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-8);
+  min-height: var(--control-height);
+  padding: 0 var(--space-6);
+  border: var(--border-width) solid var(--alsos-border-active);
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: var(--alsos-spore);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+  transition:
+    background-color var(--motion-control) var(--ease-out),
+    color var(--motion-control) var(--ease-out),
+    box-shadow var(--motion-control) var(--ease-out);
+}
+
+.cta:hover {
+  background: var(--alsos-spore);
+  color: var(--alsos-text-inverse);
+  box-shadow: var(--alsos-glow-active);
+}
+
+/* ------------------------------------------------------------------ rail -- */
+
+.rail {
+  display: none;
+}
+
+.railList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.railItem {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-end;
+  text-align: right;
+}
+
+.railLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+
+.railValue {
+  margin: 0;
+  color: var(--alsos-lichen);
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+/* ------------------------------------------------------------- microcopy -- */
+
+.microcopy {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-top: var(--space-12);
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+}
+
+.microcopyKo {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-body);
+  letter-spacing: 0;
+}
+
+/* ================================================================ 768px == */
+
+@media (min-width: 768px) {
+  .content {
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+  }
+
+  /* Tablet: tree moves right, copy sits bottom-left (§14). */
+  .copy {
+    grid-column: 1 / 6;
+  }
+
+  .microcopy {
+    flex-direction: row;
+    gap: var(--space-6);
+  }
+}
+
+/* =============================================================== 1024px == */
+
+@media (min-width: 1024px) {
+  .content {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-template-rows: 1fr auto;
+    align-content: center;
+    padding-block: calc(var(--header-height) + var(--space-12)) var(--space-12);
+  }
+
+  .copy {
+    grid-column: 1 / 5;
+    grid-row: 1;
+    justify-content: center;
+  }
+
+  .headline {
+    font-size: clamp(4rem, 7vw, 6.5rem);
+  }
+
+  .rail {
+    display: flex;
+    grid-column: 11 / -1;
+    grid-row: 1;
+    align-items: center;
+    justify-content: flex-end;
+  }
+
+  .microcopy {
+    grid-row: 2;
+    align-items: baseline;
+  }
+}
+
+/* =============================================================== 1440px == */
+
+@media (min-width: 1440px) {
+  .hero {
+    min-height: max(720px, 100svh);
+  }
+
+  .content {
+    min-height: max(720px, 100svh);
+  }
+
+  .headline {
+    /* §14 caps the headline at 144px on the widest breakpoint. */
+    font-size: clamp(6rem, 8.5vw, 9rem);
+  }
+
+  .description {
+    font-size: 1.25rem;
+  }
+}
+
+/* ============================================================== ≤ 767px == */
+
+@media (max-width: 767px) {
+  .hero,
+  .content {
+    min-height: 100svh;
+  }
+
+  .headline {
+    font-size: clamp(3rem, 13vw, 4rem);
+  }
+
+  .description {
+    font-size: var(--text-base);
+  }
+
+  .microcopy {
+    margin-top: var(--space-8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .headlineLine {
+    animation: none;
+  }
+}

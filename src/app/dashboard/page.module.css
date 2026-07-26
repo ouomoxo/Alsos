@@ -1,0 +1,182 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-12);
+  max-width: 1280px;
+}
+
+/* Sample data is labelled in the UI, not just in the source. */
+.sampleNotice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) dashed var(--alsos-border-default);
+  color: var(--alsos-text-tertiary);
+  font-size: var(--text-xs);
+}
+
+.continueHeading {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+
+.continueCard {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+  padding: var(--space-6);
+  border: var(--border-width) solid var(--alsos-border-default);
+  background: var(--alsos-surface);
+  transition: border-color var(--motion-control) var(--ease-out);
+}
+
+.continueCard:hover {
+  border-color: var(--alsos-border-active);
+}
+
+.continueMeta {
+  color: var(--alsos-lichen);
+  font-family: var(--font-ui);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.continueTitle {
+  color: var(--alsos-text-primary);
+  font-size: 1.5rem;
+}
+
+.continueProgress {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-2);
+}
+
+.continueTrack,
+.positionTrack {
+  flex: 1;
+  display: block;
+  height: var(--dot-sm);
+  background: var(--alsos-canopy);
+}
+
+.continueFill,
+.positionFill {
+  display: block;
+  height: 100%;
+  background: var(--alsos-spore);
+}
+
+.continueStep {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-12);
+}
+
+.blockHeading {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+
+.positionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin-top: var(--space-6);
+}
+
+.positionItem {
+  display: grid;
+  grid-template-columns: 8rem 1fr 3rem;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.positionName {
+  color: var(--alsos-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.positionValue {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+.blockLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  margin-top: var(--space-6);
+  color: var(--alsos-spore);
+  font-family: var(--font-label);
+  font-size: var(--text-xs);
+  letter-spacing: 0.1em;
+}
+
+.growth {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-8);
+  margin-top: var(--space-6);
+}
+
+.growthMeta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.growthStage {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--alsos-text-primary);
+  font-family: var(--font-display);
+  font-size: 1rem;
+}
+
+.growthStageKo {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+}
+
+/* XP is present, small, and low in the reading order (§8.1). */
+.growthXp {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--alsos-text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+}
+
+.growthNext {
+  color: var(--alsos-text-tertiary);
+  font-size: var(--text-2xs);
+}
+
+@media (min-width: 900px) {
+  .columns {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    gap: var(--space-16);
+  }
+}

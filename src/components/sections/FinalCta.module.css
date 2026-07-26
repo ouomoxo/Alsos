@@ -1,0 +1,77 @@
+.section {
+  /* Back to the darkest value in the system. */
+  background: var(--alsos-void);
+  padding-block: var(--space-48) var(--space-32);
+}
+
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: var(--container-max);
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+  text-align: center;
+}
+
+/* The seed: one 4px module with a slow breath. Nothing else on screen. */
+.seed {
+  width: var(--dot-md);
+  height: var(--dot-md);
+  background: var(--alsos-spore);
+  box-shadow: var(--alsos-glow-soft);
+  animation: seed-breathe var(--motion-ambient) var(--ease-organic) infinite;
+}
+
+@keyframes seed-breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+    box-shadow: 0 0 18px rgba(217, 221, 122, 0.1);
+  }
+  50% {
+    opacity: 1;
+    box-shadow: 0 0 34px rgba(217, 221, 122, 0.26);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seed {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.heading {
+  margin-top: var(--space-16);
+  font-family: var(--font-display);
+  font-size: var(--text-h3);
+  line-height: 1.15;
+  color: var(--alsos-text-primary);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--control-height);
+  margin-top: var(--space-12);
+  padding: 0 var(--space-8);
+  border: var(--border-width) solid var(--alsos-border-active);
+  border-radius: var(--radius-xs);
+  color: var(--alsos-spore);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: 0.02em;
+  transition:
+    background-color var(--motion-control) var(--ease-out),
+    color var(--motion-control) var(--ease-out),
+    box-shadow var(--motion-control) var(--ease-out);
+}
+
+.cta:hover {
+  background: var(--alsos-spore);
+  color: var(--alsos-text-inverse);
+  box-shadow: var(--alsos-glow-active);
+}

@@ -1,0 +1,118 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-16);
+}
+
+.tierHeading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  font-family: var(--font-label);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  color: var(--alsos-text-secondary);
+}
+
+.tierIndex {
+  color: var(--alsos-spore);
+}
+
+.tierEn {
+  margin-left: var(--space-3);
+  color: var(--alsos-text-tertiary);
+  font-size: var(--text-2xs);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-6);
+}
+
+/* A rail of open rows, not a deck of cards (§6.1). */
+.item {
+  border-top: var(--border-width) solid var(--alsos-border-subtle);
+  padding-block: var(--space-2);
+}
+
+.item:last-child {
+  border-bottom: var(--border-width) solid var(--alsos-border-subtle);
+}
+
+/* State is redundantly encoded in the left border pattern. */
+.item[data-pattern="dotted"] {
+  border-left: 2px dotted var(--alsos-text-tertiary);
+  padding-left: var(--space-4);
+}
+.item[data-pattern="dashed"] {
+  border-left: 2px dashed var(--alsos-warning);
+  padding-left: var(--space-4);
+}
+.item[data-pattern="solid"] {
+  border-left: 2px solid var(--alsos-moss);
+  padding-left: var(--space-4);
+}
+.item[data-pattern="double"] {
+  border-left: 4px double var(--alsos-spore);
+  padding-left: var(--space-4);
+}
+
+.link {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  min-height: var(--target-min);
+  padding-block: var(--space-4);
+}
+
+.link:hover .name {
+  color: var(--alsos-spore);
+}
+
+.name {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  color: var(--alsos-text-primary);
+  font-size: var(--text-body-lg);
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.nameEn {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.summary {
+  color: var(--alsos-text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+.state {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-label);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.1em;
+}
+
+.requires {
+  padding-bottom: var(--space-3);
+  color: var(--alsos-text-tertiary);
+  font-size: var(--text-xs);
+}
+
+@media (min-width: 768px) {
+  .link {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 5fr) auto;
+    align-items: baseline;
+    gap: var(--space-6);
+  }
+}

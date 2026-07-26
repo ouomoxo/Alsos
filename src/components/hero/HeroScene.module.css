@@ -1,0 +1,21 @@
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* Never intercepts input — every control is DOM (§11.2). */
+  pointer-events: none;
+  /* Held back until the first real frame lands, then cross-faded in. The
+     poster is never delayed waiting for this (§16). */
+  opacity: 0;
+  transition: opacity 620ms var(--ease-out);
+}
+
+.scene[data-ready="true"] {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene {
+    transition: none;
+  }
+}

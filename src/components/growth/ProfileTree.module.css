@@ -1,0 +1,32 @@
+.tree {
+  display: block;
+  overflow: visible;
+}
+
+.roots line {
+  stroke: var(--alsos-moss-deep);
+  stroke-linecap: butt;
+  opacity: 0.85;
+}
+
+.rings ellipse {
+  fill: none;
+  stroke: var(--alsos-moss-deep);
+  stroke-width: 0.4;
+  opacity: 0.5;
+}
+
+.branches line {
+  stroke: var(--alsos-moss);
+  stroke-linecap: butt;
+}
+
+/* The trunk and the primary limbs read brighter than the twigs. */
+.branches line[data-domain] {
+  stroke: var(--alsos-lichen);
+}
+
+.leaves circle {
+  fill: var(--alsos-spore);
+  opacity: 0.75;
+}

@@ -1,0 +1,195 @@
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  height: var(--header-height);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  width: 100%;
+  max-width: var(--container-max);
+  height: 100%;
+  margin-inline: auto;
+  padding-inline: var(--gutter);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  color: var(--alsos-text-primary);
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.logo:hover {
+  color: var(--alsos-spore);
+}
+
+/* --------------------------------------------------------------- desktop -- */
+
+.nav {
+  display: none;
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
+.navLink {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target-min);
+  padding-inline: var(--space-1);
+  color: var(--alsos-text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  letter-spacing: 0.04em;
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.navLink:hover {
+  color: var(--alsos-text-primary);
+}
+
+/* Active state is a lit underline plus aria-current — not a colour swap. */
+.navLink[data-active="true"] {
+  color: var(--alsos-spore);
+}
+
+.navLink[data-active="true"]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(50% - 0.9em);
+  height: var(--dot-xs);
+  background: var(--alsos-spore);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.dashboardLink {
+  display: none;
+  align-items: center;
+  min-height: var(--target-min);
+  padding: 0 var(--space-5, 1.25rem);
+  border: var(--border-width) solid var(--alsos-border-default);
+  border-radius: var(--radius-xs);
+  color: var(--alsos-text-primary);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  transition:
+    border-color var(--motion-control) var(--ease-out),
+    color var(--motion-control) var(--ease-out);
+}
+
+.dashboardLink:hover {
+  border-color: var(--alsos-border-active);
+  color: var(--alsos-spore);
+}
+
+.menuButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--target-min);
+  height: var(--target-min);
+  border: var(--border-width) solid transparent;
+  color: var(--alsos-text-primary);
+  background: none;
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  color: var(--alsos-spore);
+}
+
+@media (min-width: 1024px) {
+  .nav {
+    display: block;
+  }
+
+  .dashboardLink {
+    display: inline-flex;
+  }
+
+  .menuButton {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------- mobile modal -- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(7, 9, 8, 0.88);
+  backdrop-filter: blur(6px);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--alsos-night);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 var(--gutter) var(--space-12);
+  outline: none;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--header-height);
+  color: var(--alsos-text-primary);
+}
+
+.dialogList {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-8);
+  border-top: var(--border-width) solid var(--alsos-border-subtle);
+}
+
+.dialogLink {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  min-height: 72px;
+  padding-block: var(--space-4);
+  border-bottom: var(--border-width) solid var(--alsos-border-subtle);
+  color: var(--alsos-text-primary);
+  font-size: 1.5rem;
+}
+
+.dialogLink:hover {
+  color: var(--alsos-spore);
+}
+
+.dialogLinkEn {
+  color: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}

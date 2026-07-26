@@ -1,0 +1,24 @@
+.map {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.links path {
+  fill: none;
+  stroke: var(--alsos-moss-deep);
+  stroke-width: 1.5;
+}
+
+.nodes rect {
+  fill: var(--alsos-spore);
+}
+
+.nodeLabel {
+  fill: var(--alsos-text-tertiary);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}

@@ -1,0 +1,35 @@
+.poster {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* Sits under the canvas and the DOM UI, above nothing. */
+  z-index: 0;
+}
+
+/* <picture> is inline by default, so a percentage height on the <img> would
+   resolve against an auto-height box and letterbox the art. Taking the wrapper
+   out of layout makes the <img> a direct child of .poster — which also keeps
+   the WebGL layer's cover maths (which assumes a full-bleed poster) correct. */
+.poster picture {
+  display: contents;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Desktop art is composed with the tree right of centre; hold that anchor
+     when the viewport is a different shape than the source frame. */
+  object-position: 58% 50%;
+  /* The LQIP is painted as a background so the box is never empty while the
+     full frame decodes. */
+  background-size: cover;
+  background-position: inherit;
+}
+
+@media (max-width: 767px) {
+  .image {
+    /* The mobile composition is centred on the tree by design. */
+    object-position: 50% 42%;
+  }
+}

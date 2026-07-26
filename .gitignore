@@ -1,0 +1,21 @@
+node_modules/
+.next/
+out/
+build/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+
+# Hero source artifacts.
+# Masks and the 16-bit depth map are §13.1 deliverables, but they are ~5 MB of
+# PNG, nothing at runtime reads them, and they regenerate byte-identically from
+# the seed with `npm run assets:hero`. The composed posters under
+# public/assets/hero ARE committed, so the site deploys without an art step.
+art/
+
+*.tsbuildinfo
+next-env.d.ts
+.env*.local
+.DS_Store

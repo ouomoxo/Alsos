@@ -1,0 +1,23 @@
+/**
+ * All faces are self-hosted through npm — no CDN <link>, no external font
+ * origin, so `font-src 'self'` in the CSP holds (§17).
+ *
+ * "ALSOS Grid" is the custom display face specified in §5.1. Until that
+ * lettering is drawn, Silkscreen stands in: it is a true pixel-grid face, so
+ * the metrics and rhythm the layout is tuned against will survive the swap.
+ * The ALSOS wordmark itself is never set in it — that is drawn as SVG paths on
+ * a 12x12 module grid in AlsosLogo.tsx.
+ */
+
+@import "@fontsource/silkscreen/400.css";
+@import "@fontsource/silkscreen/700.css";
+
+@import "@fontsource-variable/geist-mono/wght.css";
+
+@import "@fontsource/jetbrains-mono/400.css";
+@import "@fontsource/jetbrains-mono/500.css";
+@import "@fontsource/jetbrains-mono/700.css";
+
+@import "@fontsource/noto-sans-kr/400.css";
+@import "@fontsource/noto-sans-kr/500.css";
+@import "@fontsource/noto-sans-kr/700.css";
