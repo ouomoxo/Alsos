@@ -103,6 +103,20 @@ test.describe("reduced motion", () => {
     expect(held.position).toBe("100%");
   });
 
+  test("the vault is already open", async ({ page }) => {
+    // The reveal is shade that lifts. Under reduced motion there is nothing to
+    // lift, and — since its resting state is transparent — nothing to see.
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    const veil = page.locator("section > div").nth(1);
+    const state = await veil.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { animationName: s.animationName, opacity: s.opacity };
+    });
+    expect(state.animationName).toBe("none");
+    expect(Number(state.opacity)).toBe(0);
+  });
+
   test("the motes stop drifting", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");

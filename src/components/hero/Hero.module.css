@@ -201,6 +201,15 @@
   pointer-events: none;
   overflow: hidden;
   container-type: size;
+  /* The sheet is light, not paint. Screen leaves the plate untouched wherever
+     the frame is black and lifts it where a gap has caught, which is what an
+     additive layer would do — source-over would instead punch warm dots
+     through the artwork.
+     The blend belongs here rather than on the sprite inside: containment makes
+     this element a stacking context, so a blend mode on its child mixes against
+     the stage's own empty backdrop instead of the poster, and an opaque sprite
+     doing that renders as a black rectangle over the whole plate. */
+  mix-blend-mode: screen;
 }
 
 /* The cover crop, in CSS: whichever of width-driven or height-driven sizing is
@@ -214,7 +223,7 @@
   width: max(100cqw, calc(100cqh * var(--plate-aspect)));
   height: max(100cqh, calc(100cqw / var(--plate-aspect)));
   background-repeat: no-repeat;
-  animation: tree-growth 2400ms 700ms both;
+  animation: tree-growth 3200ms 600ms both;
 }
 
 @keyframes tree-growth {
@@ -241,6 +250,64 @@
 :global(:root[data-visual-test]) .tree {
   animation: none;
   background-position-y: 100%;
+}
+
+/* -------------------------------------------------------------- reveal -- */
+
+/**
+ * A disc of shade that opens from the break outward.
+ *
+ * `box-shadow` with a huge spread and a circular border-radius fills every
+ * corner the disc itself does not cover, and it scales with the element, so one
+ * transform grows both the clear centre and the shade around it. Only `opacity`
+ * and `scale` animate, which keeps it off the main thread.
+ */
+.reveal {
+  position: absolute;
+  left: var(--zenith-x, 63%);
+  top: var(--zenith-y, 42%);
+  z-index: 1;
+  width: 130%;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle,
+    rgba(7, 12, 22, 0) 0%,
+    rgba(7, 12, 22, 0.28) 38%,
+    rgba(7, 12, 22, 0.74) 72%,
+    rgba(7, 12, 22, 0.86) 100%
+  );
+  box-shadow: 0 0 0 100vmax rgba(7, 12, 22, 0.86);
+  /* The resting state, and the state on any browser that will not run the
+     animation: gone. */
+  opacity: 0;
+  animation: vault-open 2600ms var(--ease-organic) forwards;
+}
+
+@keyframes vault-open {
+  0% {
+    opacity: 1;
+    scale: 0.12;
+  }
+  100% {
+    opacity: 0;
+    scale: 2.6;
+  }
+}
+
+/* Nothing to reveal if the viewer has asked for stillness — the vault is simply
+   already open. Same for visual-regression shots. */
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    animation: none;
+  }
+}
+
+.hero[data-visual-test="1"] .reveal,
+:global(:root[data-visual-test]) .reveal {
+  animation: none;
 }
 
 /* ----------------------------------------------------------------- air -- */

@@ -2,21 +2,23 @@ import { HeroCopy } from "./HeroCopy";
 import { HeroMotes } from "./HeroMotes";
 import { HeroPoster } from "./HeroPoster";
 import { HeroProductRail } from "./HeroProductRail";
+import { HeroReveal } from "./HeroReveal";
 import { HeroTree } from "./HeroTree";
 import styles from "./Hero.module.css";
 
 /**
  * Section 01 — Germination.
  *
- * Three layers, none of them 3D:
- *   1. HeroPoster  the forest, hand and light, as a still
- *   2. HeroTree    the growing tree, a sprite sheet played with CSS steps()
- *   2b. HeroMotes  air, as three drifting CSS layers
- *   3. this DOM    every word, link and control as real HTML
+ * Layers, none of them 3D:
+ *   1.  HeroPoster  the canopy and the break in it, as a still
+ *   1b. HeroReveal  shade opening from the break outward, pure CSS
+ *   2.  HeroTree    the gaps catching light, a sprite played with CSS steps()
+ *   2b. HeroMotes   air, as three drifting CSS layers
+ *   3.  this DOM    every word, link and control as real HTML
  *
  * Laid out against the 1536x605 canonical reference (§6). Layers 1 and 3 are
- * complete on their own; if the sprite never loads there is still a finished
- * hero underneath it.
+ * complete on their own; if neither animated layer loads there is still a
+ * finished hero underneath them.
  */
 export function Hero({ visualTest = false }: { visualTest?: boolean }) {
   return (
@@ -26,6 +28,7 @@ export function Hero({ visualTest = false }: { visualTest?: boolean }) {
       data-visual-test={visualTest ? "1" : undefined}
     >
       <HeroPoster />
+      <HeroReveal />
       <HeroTree />
       <HeroMotes />
 

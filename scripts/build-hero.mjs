@@ -562,21 +562,26 @@ function stipple(canvas, comp, field, nearness, rng, count) {
 /* --------------------------------------------------------------- growth --- */
 
 /**
- * The vault closing over the viewer.
+ * Dawn coming through the vault.
  *
- * Branches open along their own wood, outward from the trunks at the frame's
- * edge. Pre-rendered to frames; the browser plays it with CSS steps().
+ * The first version of this traced the branch skeleton, and that was the wrong
+ * subject twice over. The plate already draws that wood as silhouette, so
+ * lighting the same centrelines lays a bright stroke over its own dark shape —
+ * a cable diagram thrown across the artwork. And a canopy is not a skeleton: a
+ * viewer looking up sees leaves, so leaves are what must move.
  *
- * The plate draws this same wood as silhouette, so the animation must not draw
- * it as line — a bright stroke laid over its own dark shape reads as a cable
- * diagram thrown across the artwork. What it draws instead is the light
- * *catching* along the wood as it arrives: a thin warm filament, brightest
- * near the break and gone entirely at the corners, because that is where the
- * backlight is. The final frame has to survive being held still under reduced
- * motion, so it is built to be a permanent, barely-there rim rather than an
- * effect that needs to fade out.
+ * What ignites here are the gaps — the brightest few percent of the finished
+ * plate, where the canopy actually has a hole in it. Points are born in order
+ * of distance from the break, so the light spreads outward through the leaves
+ * as a wavefront rather than switching on. A slow angular wobble keeps that
+ * front from being a perfect expanding circle.
+ *
+ * Everything is additive, which is what makes it safe: the layer only ever adds
+ * light the finished plate is already lit for. Reduced motion pins the last
+ * frame, so the resting state is designed to be a permanent glitter on the
+ * foliage nearest the light rather than an effect that has to fade out.
  */
-function renderGrowth(comp, segments, rng) {
+function renderGrowth(comp, field, rng) {
   const { width: W, height: H } = comp;
   const SS = 3;
   const fw = Math.ceil(W / SS);
@@ -586,35 +591,57 @@ function renderGrowth(comp, segments, rng) {
   const zy = comp.zenith.y * H;
   const rx = W * comp.spread.x;
   const ry = H * comp.spread.y;
+  const wobble = makeFbm2D(`${SEED}:front:${comp.id}`, 3);
+
+  /* One pass over the plate, emitting a point wherever the canopy has an actual
+     hole in it. No cumulative table: the acceptance probability *is* the
+     distribution, and a single scan over four million pixels is cheaper than
+     building one.
+
+     Weighting by leaf *edges* was the earlier mistake. Those edges are closed
+     loops around every leaf cluster, so lighting them draws lace — the frame
+     crusted over like frost. The gaps are what actually catch fire at dawn, so
+     the weight is a steep power of the finished luminance: only the brightest
+     few percent of the plate qualifies, and the result is glints rather than a
+     texture.
+
+     Normalised against its own total, not its peak — the peak of this field is
+     far above its mean, and normalising by it is what produced five thousand
+     points where a hundred and fifty thousand were asked for. */
+  const weight = (x, y) => {
+    const d = Math.hypot((x - zx) / rx, (y - zy) / ry);
+    if (d >= 1) return 0;
+    return Math.pow(field[y * W + x], 4) * Math.pow(1 - d, 1.2);
+  };
+
+  let totalWeight = 0;
+  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) totalWeight += weight(x, y);
+  const target = Math.round(fw * fh * 0.06);
+  const density = target / (totalWeight || 1);
 
   const particles = [];
-  const budget = Math.round(fw * fh * 0.3);
-  const weights = segments.map((s) => Math.hypot(s.x1 - s.x0, s.y1 - s.y0) * s.w0);
-  const total = weights.reduce((a, b) => a + b, 0) || 1;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const w = weight(x, y);
+      if (w <= 0) continue;
+      if (rng() > w * density) continue;
+      const d = Math.hypot((x - zx) / rx, (y - zy) / ry);
+      const lit = Math.pow(1 - d, 1.2);
 
-  for (let i = 0; i < budget; i++) {
-    let r = rng() * total;
-    let idx = 0;
-    while (idx < segments.length - 1 && (r -= weights[idx]) > 0) idx++;
-    const s = segments[idx];
-    const t = rng();
-    const w = s.w0 + (s.w1 - s.w0) * t;
-    const off = (rng() + rng() + rng() - 1.5) * 1.1;
-    const core = clamp01(1 - Math.abs(off));
-    const x = s.x0 + (s.x1 - s.x0) * t + off * w;
-    const y = s.y0 + (s.y1 - s.y0) * t;
-    // Only the wood near the break is lit. Everything out at the corners is
-    // behind the viewer's head, and nothing there has any light on it.
-    const lit = Math.pow(clamp01(1 - Math.hypot((x - zx) / rx, (y - zy) / ry)), 1.7);
-    if (lit < 0.02) continue;
-    particles.push({
-      x: x / SS,
-      y: (y + gaussian(rng, 0, w * 0.5)) / SS,
-      birth: s.p0 + (s.p1 - s.p0) * t,
-      tone: lerp(0.7, 0.97, core),
-      alpha: lerp(0.01, 0.05, core) * lit,
-      radius: lerp(0.5, 1.25, core),
-    });
+      const a = Math.atan2((y - zy) / ry, (x - zx) / rx);
+      particles.push({
+        x: x / SS,
+        y: y / SS,
+        // The wavefront: outward from the break, bent by a slow angular wobble
+        // so it arrives as weather rather than as a radar sweep.
+        birth: clamp01(d * 0.82 + (wobble(Math.cos(a) * 2.2 + 5, Math.sin(a) * 2.2 + 3) - 0.5) * 0.3),
+        tone: lerp(0.86, 1, clamp01(lit + gaussian(rng, 0, 0.06))),
+        alpha: lerp(0.08, 0.26, lit) * lerp(0.5, 1, rng()),
+        // Soft and wide. A glint is a small light seen through moving air, not
+        // a hard dot.
+        radius: lerp(1.1, 3.4, rng() * rng()),
+      });
+    }
   }
 
   for (let f = 0; f < GROWTH_FRAMES; f++) {
@@ -623,21 +650,33 @@ function renderGrowth(comp, segments, rng) {
     const frame = new Canvas(fw, fh);
     for (const p of particles) {
       if (p.birth > growth) continue;
-      // A point flares as it arrives and then settles to its resting value —
-      // the flare is the growth, the resting value is the rim that stays.
-      const age = clamp01((growth - p.birth) * 4.5);
-      frame.point(p.x, p.y, p.radius, sky(p.tone), p.alpha * (0.4 + 0.6 * age) * (1 + 1.1 * (1 - age)));
+      const age = clamp01((growth - p.birth) * 3.4);
+      // Two envelopes, and the ratio between them is the whole effect.
+      //
+      // `flare` is a hump peaking halfway through a point's arrival and gone by
+      // the end — the only thing the eye reads as motion. The first version had
+      // it *dimmer* than the resting value, so there was no wavefront at all.
+      //
+      // `rest` is what survives, and it has to be nearly nothing: the plate
+      // already draws these same filaments, so a resting value anywhere near
+      // the flare draws them a second time and the canopy crusts over with
+      // frost. Thirty times below the peak, which gamma encoding lifts back to
+      // a faint sparkle rather than the nothing it looks like here.
+      const rest = 0.01 + 0.023 * age;
+      const flare = 4 * age * (1 - age) * 1.08;
+      frame.point(p.x, p.y, p.radius, sky(p.tone), p.alpha * (rest + flare));
     }
     const base = f * fw * fh * 4;
     for (let i = 0; i < fw * fh; i++) {
-      let peak = 0;
       for (let c = 0; c < 3; c++) {
         const v = frame.data[i * 3 + c];
-        const enc = Math.round(Math.pow(clamp01(v / (1 + v * 0.5)), 1 / 2.2) * 255);
-        sheet[base + i * 4 + c] = enc;
-        if (enc > peak) peak = enc;
+        sheet[base + i * 4 + c] = Math.round(Math.pow(clamp01(v / (1 + v * 0.5)), 1 / 2.2) * 255);
       }
-      sheet[base + i * 4 + 3] = Math.min(255, Math.round(peak * 1.3));
+      // Opaque, always. The layer is composited with `screen`, where black is
+      // the identity — an alpha channel would only fringe the points, and a
+      // partly transparent bright pixel would *dim* the plate underneath it
+      // rather than lighting it.
+      sheet[base + i * 4 + 3] = 255;
     }
   }
 
@@ -646,6 +685,7 @@ function renderGrowth(comp, segments, rng) {
     frameWidth: fw,
     frameHeight: fh,
     frames: GROWTH_FRAMES,
+    particles: particles.length,
     rect: { x: 0, y: 0, width: 1, height: 1 },
   };
 }
@@ -685,7 +725,7 @@ async function main() {
 
     const canvas = new Canvas(comp.width, comp.height);
     stipple(canvas, comp, field, nearness, rng, comp.points);
-    const growth = renderGrowth(comp, segments, makeRng(`${SEED}:growth:${comp.id}`));
+    const growth = renderGrowth(comp, field, makeRng(`${SEED}:growth:${comp.id}`));
 
     const base = sharp(encode(canvas), {
       raw: { width: comp.width, height: comp.height, channels: 4 },
@@ -730,7 +770,7 @@ async function main() {
     });
 
     console.log(
-      `  ${comp.id} (${comp.width}x${comp.height}) — ${segments.length} limbs, ${(comp.points / 1000000).toFixed(1)}M points in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
+      `  ${comp.id} (${comp.width}x${comp.height}) — ${segments.length} limbs, ${(comp.points / 1000000).toFixed(1)}M points, ${(growth.particles / 1000).toFixed(0)}k igniting in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
     );
   }
 
