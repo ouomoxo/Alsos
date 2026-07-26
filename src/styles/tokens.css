@@ -8,34 +8,38 @@
  */
 
 :root {
-  /* ---------------------------------------------------------------- §20 --
-     Sampled from the canonical reference. Re-sample against the final art
-     plate when it lands; these are the approximation the build starts from. */
+  /* ------------------------------------------------------------- grove ---
+     One ramp, shadow to sun, rotating in hue as it climbs: cold blue-teal
+     darks through jade and leaf into warm gold. The warmth of the light is
+     only legible against the coldness of the dark — a single-hue palette can
+     be atmospheric but it cannot be luminous. Sampled from the plate. */
 
-  --void-950: #0a0b0c;
-  --forest-900: #0f1210;
-  --forest-850: #151914;
-  --forest-800: #1e2318;
-  --forest-750: #292f1e;
-  --moss-700: #353c23;
-  --moss-650: #424928;
-  --moss-600: #52592f;
-  --moss-550: #636a3c;
-  --lichen-500: #7b813f;
-  --spore-400: #9ca156;
-  --spore-300: #c3c572;
-  --spore-200: #e9e98c;
+  --void-950: #04070c;
+  --forest-900: #071219;
+  --forest-850: #0b2226;
+  --forest-800: #123a33;
+  --forest-750: #1b5741;
+  --moss-700: #1b5741;
+  --moss-650: #2c7a4f;
+  --moss-600: #2c7a4f;
+  --moss-550: #4f9c5b;
+  --lichen-500: #86bb66;
+  --spore-400: #b9d180;
+  --spore-300: #e3dd9b;
+  --spore-200: #f6ecc0;
 
-  --text-primary: #f2f2e6;
-  --text-secondary: #abada0;
-  --text-tertiary: #808368;
+  /* Text carries the same temperature split: warm at the top of the ramp,
+     cool sage in the middle voice. */
+  --text-primary: #f6f2e2;
+  --text-secondary: #a9c0a4;
+  --text-tertiary: #6f8a76;
 
-  --border-subtle: rgba(195, 197, 114, 0.14);
-  --border-default: rgba(195, 197, 114, 0.28);
-  --border-active: rgba(233, 233, 140, 0.72);
+  --border-subtle: rgba(227, 221, 155, 0.16);
+  --border-default: rgba(227, 221, 155, 0.32);
+  --border-active: rgba(246, 236, 192, 0.7);
 
-  --glow-subtle: 0 0 20px rgba(233, 233, 140, 0.1);
-  --glow-active: 0 0 32px rgba(233, 233, 140, 0.2);
+  --glow-subtle: 0 0 26px rgba(227, 221, 155, 0.14);
+  --glow-active: 0 0 40px rgba(246, 236, 192, 0.26);
 
   /* Functional state. Never the only carrier of meaning (§19). */
   --state-success: #9ca156;

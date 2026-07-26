@@ -1,17 +1,26 @@
 #!/usr/bin/env node
 /**
- * ALSOS hero compositor.
+ * ALSOS — the grove.
  *
- * Builds the hero plate from the two source photographs plus a generated tree:
+ * The hero is not a photograph and not a grid of pixels. It is a stipple: some
+ * six hundred thousand individual points, placed off-grid, whose density and
+ * size carry the image the way ink does in an engraving. Nothing snaps to a
+ * cell, so the forms keep their curves.
  *
- *   art/source/forest.jpg      the grove — graded down to the ALSOS palette
- *   art/source/hand-dots.jpg   the open palm, already screened into halftone
- *   scripts/lib/tree.mjs       the tree, which must animate and so is drawn
+ * Three ideas hold it together:
  *
- * The division of labour follows the brief: the forest stays cinematic and
- * photographic, while the hand and the tree carry the dot grammar. The tree is
- * generated rather than photographed because it is the one element that has to
- * grow, and growth needs a known branch order.
+ *   Colour is a harmony, not a tint. Shadows fall toward deep cold teal and
+ *   light rises toward warm gold — complementaries at the two ends of one
+ *   ramp. A single-hue image can be moody but it cannot be luminous, because
+ *   luminosity is the *contrast* between a cold dark and a warm light.
+ *
+ *   Density is the drawing. Points cluster where light gathers and thin out
+ *   into the dark, so the eye reads mass and air rather than edges. Point size
+ *   falls with distance, which is what gives the grove its depth.
+ *
+ *   Scale overwhelms. The trunks run past both edges of the frame, the light
+ *   falls from somewhere above the top of it, and the tree at the centre is
+ *   small against all of it. The viewer is inside something old.
  *
  *   npm run assets:hero
  */
@@ -21,88 +30,99 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
 
-import { clamp01, gaussian, lerp, makeRng, smoothstep } from "./lib/rng.mjs";
+import { clamp01, gaussian, lerp, makeFbm2D, makeRng, smoothstep } from "./lib/rng.mjs";
 import { generateTree, serializeTree } from "./lib/tree.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = path.join(ROOT, "public", "assets", "hero");
 const SRC = path.join(ROOT, "art", "source");
-const SEED = "alsos-hero-v1";
+const SEED = "alsos-grove-v1";
+const GROWTH_FRAMES = 32;
 
-/** Art pixel, in plate pixels. The hand and tree are drawn on this grid. */
-const CELL = 4;
-const GROWTH_FRAMES = 30;
-
-/* ------------------------------------------------------------- palette --- */
+/* --------------------------------------------------------------- colour --- */
 
 const hexToLinear = (hex) => {
   const n = parseInt(hex.slice(1), 16);
   return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => Math.pow(v / 255, 2.2));
 };
 
-/** Every pixel in the finished plate is one of these (§20). */
-const RAMP = [
-  "#0a0b0c", "#0d100e", "#0f1210", "#151914", "#1a1f18", "#1e2318",
-  "#242a1b", "#292f1e", "#313821", "#353c23", "#424928", "#52592f",
-  "#636a3c", "#7b813f", "#9ca156", "#c3c572", "#e9e98c", "#f4f4d2",
-].map(hexToLinear);
-
-const SPORE = hexToLinear("#c3c572");
-const LICHEN = hexToLinear("#9ca156");
-
 /**
- * The tree's own ramp — heartwood to leaf tip.
+ * The grove's ramp, shadow to sun.
  *
- * Deliberately inside the plate's green family rather than the near-white it
- * started as: a cream tree on an olive grove reads as two different materials
- * pasted together, however bright the glow behind it.
+ * Read the hues along it: the darks are blue-teal, the middles turn jade, the
+ * lights swing through leaf-green into gold. That rotation is the whole colour
+ * idea — warm light can only feel warm against a cold dark.
  */
-const TREE_CORE = hexToLinear("#e9e98c");
-const TREE_MID = hexToLinear("#c3c572");
-const TREE_TIP = hexToLinear("#9ca156");
+const RAMP = [
+  [0.00, "#04070c"], // abyss
+  [0.08, "#06131a"], // deep water
+  [0.18, "#0a2426"], // teal shadow
+  [0.30, "#113c31"], // moss in shade
+  [0.42, "#1a5b3c"], // jade
+  [0.54, "#2f7f47"], // living green
+  [0.65, "#5aa054"], // sunlit leaf
+  [0.75, "#93c065"], // haze
+  [0.84, "#c6d582"], // light through leaves
+  [0.91, "#e8dd9b"], // gold
+  [0.96, "#f7edc2"], // near the source
+  [1.00, "#fffbe8"], // the sun itself
+].map(([stop, hex]) => [stop, hexToLinear(hex)]);
+
+/** Sample the ramp continuously. */
+function ramp(t) {
+  const v = clamp01(t);
+  for (let i = 1; i < RAMP.length; i++) {
+    if (v <= RAMP[i][0]) {
+      const [t0, c0] = RAMP[i - 1];
+      const [t1, c1] = RAMP[i];
+      const k = (v - t0) / (t1 - t0 || 1);
+      return [lerp(c0[0], c1[0], k), lerp(c0[1], c1[1], k), lerp(c0[2], c1[2], k)];
+    }
+  }
+  return RAMP[RAMP.length - 1][1];
+}
 
 /* -------------------------------------------------------- compositions --- */
 
 const COMPOSITIONS = [
   {
-    id: "desktop-ultrawide",
+    id: "desktop",
     width: 3200,
     height: 1260,
     media: "(min-width: 768px)",
-    /** Which part of the forest photo lands in frame. */
-    forestFocus: { x: 0.42, y: 0.54 },
-    /** Canonical focal point (§9): where the tree sits. */
-    light: { x: 0.5566, y: 0.02 },
-    palm: { x: 0.5566, y: 0.70 },
-    treeHeight: 0.55,
-    /** Hand: how wide the source frame is drawn, in plate widths. Its palm is
-        anchored to comp.palm, not its centre — the hand fills only part of the
-        source frame, so centring it puts the palm well off the mark. */
-    hand: { width: 0.72, flip: false },
+    forestFocus: { x: 0.5, y: 0.46 },
+    /** Above the top edge: the source is never in frame, only its light. */
+    light: { x: 0.54, y: -0.14 },
+    root: { x: 0.54, y: 0.9 },
+    treeHeight: 0.52,
+    points: 620000,
+    trunks: 46,
+    rays: 16,
+    /** Copy sits here, so the stipple thins and the ramp darkens. */
     safe: [
-      { edge: "left", extent: 0.44, strength: 0.9 },
-      { edge: "right", extent: 0.16, strength: 0.78 },
-      { edge: "top", extent: 0.15, strength: 0.6 },
+      { edge: "left", extent: 0.4, strength: 0.62 },
+      { edge: "right", extent: 0.14, strength: 0.6 },
+      { edge: "top", extent: 0.13, strength: 0.55 },
     ],
   },
   {
-    id: "mobile-portrait",
+    id: "mobile",
     width: 1440,
     height: 1920,
     media: "(max-width: 767px)",
-    forestFocus: { x: 0.5, y: 0.45 },
-    light: { x: 0.5, y: 0.04 },
-    palm: { x: 0.5, y: 0.55 },
-    treeHeight: 0.36,
-    hand: { width: 1.25, flip: false },
+    forestFocus: { x: 0.5, y: 0.4 },
+    light: { x: 0.5, y: -0.1 },
+    root: { x: 0.5, y: 0.66 },
+    treeHeight: 0.4,
+    points: 330000,
+    trunks: 30,
+    rays: 11,
     safe: [
-      { edge: "bottom", extent: 0.5, strength: 0.9 },
-      { edge: "top", extent: 0.1, strength: 0.55 },
+      { edge: "bottom", extent: 0.46, strength: 0.9 },
+      { edge: "top", extent: 0.09, strength: 0.5 },
     ],
   },
 ];
-
-/* ------------------------------------------------------------ safe area --- */
 
 function safeMultiplier(comp, x, y) {
   const u = x / comp.width;
@@ -113,15 +133,55 @@ function safeMultiplier(comp, x, y) {
       s.edge === "left" ? u : s.edge === "right" ? 1 - u : s.edge === "bottom" ? 1 - v : v;
     if (along >= s.extent) continue;
     const t = 1 - smoothstep(0, s.extent, along);
-    darkest = Math.max(darkest, s.strength * Math.pow(t, 1.05));
+    darkest = Math.max(darkest, s.strength * Math.pow(t, 1.1));
   }
   return darkest;
 }
 
-/* -------------------------------------------------------------- sources --- */
+/* ---------------------------------------------------------------- canvas --- */
 
-/** Cover-fit a source image into the plate, honouring a focal point. */
-async function loadCover(file, width, height, focus) {
+/** Additive float canvas. Points accumulate as light does. */
+class Canvas {
+  constructor(width, height) {
+    this.width = width;
+    this.height = height;
+    this.data = new Float32Array(width * height * 3);
+  }
+
+  /**
+   * One stipple point.
+   *
+   * Soft-edged and sub-pixel accurate: a hard square would put the image back
+   * on a grid, and it is the absence of a grid that lets the grove curve.
+   */
+  point(cx, cy, radius, colour, intensity) {
+    const { width, height, data } = this;
+    const minX = Math.max(0, Math.floor(cx - radius));
+    const maxX = Math.min(width - 1, Math.ceil(cx + radius));
+    const minY = Math.max(0, Math.floor(cy - radius));
+    const maxY = Math.min(height - 1, Math.ceil(cy + radius));
+    const inv = 1 / (radius * radius);
+
+    for (let y = minY; y <= maxY; y++) {
+      const dy = y + 0.5 - cy;
+      for (let x = minX; x <= maxX; x++) {
+        const dx = x + 0.5 - cx;
+        const d2 = (dx * dx + dy * dy) * inv;
+        if (d2 >= 1) continue;
+        // Smooth shoulder, so points read as grains of light, not discs.
+        const a = (1 - d2) * (1 - d2) * intensity;
+        const i = (y * width + x) * 3;
+        data[i] += colour[0] * a;
+        data[i + 1] += colour[1] * a;
+        data[i + 2] += colour[2] * a;
+      }
+    }
+  }
+}
+
+/* ---------------------------------------------------------------- source --- */
+
+async function loadForest(file, width, height, focus) {
   const image = sharp(file);
   const meta = await image.metadata();
   const scale = Math.max(width / meta.width, height / meta.height);
@@ -132,6 +192,9 @@ async function loadCover(file, width, height, focus) {
 
   const { data } = await image
     .resize(drawnW, drawnH)
+    // A gentle blur first: we are sampling structure, not texture, and the
+    // stipple supplies all the grain the image needs.
+    .blur(2.2)
     .extract({ left, top, width, height })
     .removeAlpha()
     .raw()
@@ -139,348 +202,273 @@ async function loadCover(file, width, height, focus) {
   return data;
 }
 
+/* ---------------------------------------------------------------- scene --- */
+
 /**
- * Load the halftone hand as a coverage mask, resampled to the art grid.
+ * Build the luminance field the stipple will be drawn from.
  *
- * The source encodes tone as dot *density*, not as pixel value: its dots are
- * near-binary. Sampling it per pixel therefore lands on a dot or a gap at
- * random and the hand dissolves into noise. Area-averaging it down to one
- * sample per art cell recovers the continuous tone the density represented,
- * and our own dither re-screens it onto our grid at our cell size.
+ * This is the painting, done in one channel: the photograph's structure, the
+ * cathedral verticals, the shafts falling through them, ground mist, and the
+ * glow at the root. The stipple pass then renders it as points.
  */
-async function loadHandMask(file, cellsWide, cellsHigh, flip) {
-  let image = sharp(file).greyscale();
-  if (flip) image = image.flop();
-  const { data, info } = await image
-    .resize(cellsWide, cellsHigh, { fit: "fill", kernel: "cubic" })
-    .raw()
-    .toBuffer({ resolveWithObject: true });
-  return { data, width: info.width, height: info.height };
-}
-
-/* --------------------------------------------------------------- render --- */
-
-async function renderComposition(comp, tree) {
-  const t0 = Date.now();
+function buildField(comp, forest, rng) {
   const { width: W, height: H } = comp;
-  const rng = makeRng(`${SEED}:${comp.id}`);
+  const field = new Float32Array(W * H);
+  const depth = new Float32Array(W * H);
+  const canopy = makeFbm2D(`${SEED}:canopy:${comp.id}`, 5);
+  const bark = makeFbm2D(`${SEED}:bark:${comp.id}`, 3);
 
-  const forest = await loadCover(path.join(SRC, "forest.jpg"), W, H, comp.forestFocus);
+  const lx = comp.light.x * W;
+  const ly = comp.light.y * H;
+  const rootX = comp.root.x * W;
+  const rootY = comp.root.y * H;
 
-  // The hand is drawn at one sample per art cell.
-  const handW = comp.hand.width * W;
-  const handAspect = 789 / 1170;
-  const handH = handW * handAspect;
-  const hand = await loadHandMask(
-    path.join(SRC, "hand-dots.jpg"),
-    Math.round(handW / CELL),
-    Math.round(handH / CELL),
-    comp.hand.flip,
-  );
+  /* ---------------------------------------------------------- the air --- */
 
-  const rgb = new Float32Array(W * H * 3);
-  const handCoverage = new Float32Array(W * H);
-  const treeMask = new Float32Array(W * H);
-
-  const lightPx = { x: comp.light.x * W, y: comp.light.y * H };
-  const palmX = comp.palm.x * W;
-  const palmY = comp.palm.y * H;
-
-  /* 1. Grade the forest ------------------------------------------------- */
-
-  // The source is a bright, sunlit, midday grove. The brand is a dark one, so
-  // luminance is compressed hard and re-tinted along the palette rather than
-  // simply multiplied down — that keeps the canopy separation instead of
-  // crushing everything to black.
+  // Aerial perspective is the whole trick. Distance does not darken a forest,
+  // it *lightens* it — haze scatters light into everything far away. Building
+  // the air first and then cutting near silhouettes out of it is what gives a
+  // grove depth; darkening things by distance only ever gives a flat wall.
   for (let y = 0; y < H; y++) {
+    const v = y / H;
     for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 3;
-      const r = Math.pow(forest[i] / 255, 2.2);
-      const g = Math.pow(forest[i + 1] / 255, 2.2);
-      const b = Math.pow(forest[i + 2] / 255, 2.2);
-      const lum = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-
-      // Strong shoulder: highlights hold, midtones fall away.
-      let t = Math.pow(lum, 1.35) * 0.72;
-
-      // The sun in the plate becomes the canopy break the tree grows toward.
-      const dl = Math.hypot((x - lightPx.x) / (W * 0.42), (y - lightPx.y) / (H * 0.75));
-      t += Math.pow(clamp01(1 - dl), 3.2) * 0.28;
-
-      // The floor falls away into darkness. Without this the source's bright
-      // sunlit undergrowth sits directly behind the hand and the silhouette
-      // has nothing to separate against.
-      t *= 1 - smoothstep(0.42, 1, y / H) * 0.88;
-
-      t = clamp01(t);
-      // Sample the ramp continuously; the dither pass snaps it later.
-      const f = t * (RAMP.length - 1);
-      const lo = RAMP[Math.floor(f)];
-      const hi = RAMP[Math.min(RAMP.length - 1, Math.ceil(f))];
-      const k = f - Math.floor(f);
-      rgb[i] = lerp(lo[0], hi[0], k);
-      rgb[i + 1] = lerp(lo[1], hi[1], k);
-      rgb[i + 2] = lerp(lo[2], hi[2], k);
+      const u = x / W;
+      const dl = Math.hypot((u - comp.light.x) * 1.15, v - comp.light.y);
+      // Light pools around the source and drains toward the floor.
+      let t = Math.pow(clamp01(1 - dl * 0.52), 1.9) * 1.0;
+      t += Math.pow(1 - clamp01(v), 2.4) * 0.16;
+      t *= 1 - smoothstep(0.6, 1.05, v) * 0.42;
+      field[y * W + x] = t;
+      depth[y * W + x] = 0;
     }
   }
 
-  /* 2. The hand ---------------------------------------------------------- */
+  /* ------------------------------------------------------- the canopy --- */
 
-  // The source is already screened into halftone dots, light-on-black. Those
-  // dots are used as coverage, not as light: the hand reads as a dark cut-out
-  // of the forest, lit only where the tree's glow lands on it. Compositing it
-  // additively would make a glowing white glove.
-  // Where the palm sits inside the source frame, measured off the sphere the
-  // photograph was shot with — that sphere's centre is the point the tree
-  // replaces, so aligning it to comp.palm puts the tree in the hand.
-  const SOURCE_PALM = { x: 0.6, y: 0.545 };
-  const handLeft = palmX - SOURCE_PALM.x * handW;
-  const handTop = palmY - SOURCE_PALM.y * handH;
-  const glowRadius = comp.treeHeight * H * 0.42;
-
+  // A ceiling of leaves that the light has to find its way through. The gaps
+  // are what the shafts come from, so this is drawn before them.
   for (let y = 0; y < H; y++) {
+    const v = y / H;
+    const ceiling = 1 - smoothstep(0.18, 0.62, v);
+    if (ceiling <= 0) continue;
     for (let x = 0; x < W; x++) {
-      // One sample per art cell — the mask is already at that resolution.
-      const sx = Math.floor((x - handLeft) / CELL);
-      const sy = Math.floor((y - handTop) / CELL);
-      if (sx < 0 || sy < 0 || sx >= hand.width || sy >= hand.height) continue;
-
-      const v = hand.data[sy * hand.width + sx] / 255;
-      // Drop the source's own bright sphere and its caption plate; the tree
-      // replaces the sphere and the caption is another brand's copy.
-      const nu = sx / hand.width;
-      const nv = sy / hand.height;
-      const inCaption = nu < 0.36 && nv > 0.75;
-      if (inCaption) continue;
-
-      // The sphere the photograph was shot with, and its bloom. The tree
-      // replaces it, so everything above the hand's own tonal range goes.
-      if (v > 0.5) continue;
-
-      let coverage = smoothstep(0.04, 0.18, v) * (1 - smoothstep(0.4, 0.5, v));
-      if (coverage <= 0.01) continue;
-
+      const n = canopy(x * 0.0016, y * 0.0034);
+      const leaf = smoothstep(0.38, 0.72, n) * ceiling;
       const p = y * W + x;
-      handCoverage[p] = Math.max(handCoverage[p], coverage);
-
-      const i = p * 3;
-
-      // The hand replaces the forest rather than darkening it. Used as a
-      // darkening filter it never separates, because the grove behind it is
-      // already dark; as its own element it has its own base tone and its own
-      // lighting, which is what makes the silhouette read.
-      const bd = Math.hypot(x - palmX, (y - palmY) * 1.3) / glowRadius;
-      const bounce = bd < 1 ? Math.pow(1 - bd, 2.6) * 0.62 : 0;
-      // The screened value is the source's own modelling: brighter dots are
-      // the surfaces turned toward the light. Its useful range is roughly
-      // 0.10-0.52 once the sphere is out, so it is remapped across that band —
-      // read raw it collapses to almost nothing and the hand goes flat.
-      const modelling = smoothstep(0.10, 0.52, v);
-      const lit = modelling * (0.22 + bounce * 1.1);
-
-      const base = 0.06;
-      const hr = RAMP[1][0] * base + LICHEN[0] * lit;
-      const hg = RAMP[1][1] * base + LICHEN[1] * lit;
-      const hb = RAMP[1][2] * base + LICHEN[2] * lit;
-
-      rgb[i] = lerp(rgb[i], hr, coverage);
-      rgb[i + 1] = lerp(rgb[i + 1], hg, coverage);
-      rgb[i + 2] = lerp(rgb[i + 2], hb, coverage);
+      field[p] *= 1 - leaf * 0.45;
+      // Leaves catch light on their own edges.
+      field[p] += Math.pow(clamp01(n - 0.62), 1.4) * ceiling * 0.5;
     }
   }
 
-  /* 3. Germination glow -------------------------------------------------- */
+  /* ------------------------------------------------------- the trunks --- */
 
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const d = Math.hypot(x - palmX, (y - palmY) * 1.45) / (comp.treeHeight * H * 0.3);
-      if (d > 1) continue;
-      const a = Math.pow(1 - d, 2.6) * 0.22;
-      const i = (y * W + x) * 3;
-      rgb[i] += SPORE[0] * a;
-      rgb[i + 1] += SPORE[1] * a;
-      rgb[i + 2] += SPORE[2] * a;
-    }
-  }
+  // Drawn back to front. Far trunks barely differ from the haze they stand in;
+  // near ones are cut to near-black and run past both edges of the frame.
+  const layers = [];
+  for (let i = 0; i < comp.trunks; i++) layers.push(Math.pow(rng(), 0.75));
+  layers.sort((a, b) => a - b);
 
-  /* 4. Drifting spores --------------------------------------------------- */
+  for (const near of layers) {
+    let u = rng();
+    // Keep a corridor open down the middle for the light and the tree.
+    const pull = (u - comp.light.x) * 0.4;
+    u = clamp01(u + pull);
+    const x0 = u * W;
+    // Near trunks are enormous; far ones are saplings by comparison.
+    const width = W * lerp(0.003, 0.055, Math.pow(near, 2.4));
+    const lean = gaussian(rng, 0, 0.055);
+    const sway = gaussian(rng, 0, 0.9);
+    const phase = rng() * 9;
+    // Far trunks stop short of the floor; near ones run off it.
+    const foot = H * lerp(0.72, 1.15, near);
+    const crown = -H * lerp(0.02, 0.35, near);
 
-  const sporeCount = Math.round((W * H) / 26000);
-  for (let s = 0; s < sporeCount; s++) {
-    const u = rng();
-    const v = Math.pow(rng(), 1.5) * 0.85;
-    const toward = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 1.7), 2);
-    const a = toward * lerp(0.1, 0.55, rng());
-    if (a < 0.02) continue;
-    const px = Math.floor((u * W) / CELL) * CELL;
-    const py = Math.floor((v * H) / CELL) * CELL;
-    for (let dy = 0; dy < CELL; dy++) {
-      for (let dx = 0; dx < CELL; dx++) {
-        const ix = px + dx;
-        const iy = py + dy;
-        if (ix >= W || iy >= H) continue;
-        const i = (iy * W + ix) * 3;
-        rgb[i] += SPORE[0] * a;
-        rgb[i + 1] += SPORE[1] * a;
-        rgb[i + 2] += SPORE[2] * a;
-        treeMask[iy * W + ix] = Math.max(treeMask[iy * W + ix], a);
+    for (let y = 0; y < H; y++) {
+      if (y > foot) continue;
+      const along = clamp01((foot - y) / (foot - crown));
+      // The curve. A trunk that is a straight line reads as scaffolding.
+      const cx =
+        x0 + lean * along * W * 0.09 + Math.sin(along * 2.6 + phase) * sway * W * 0.012;
+      // Wide at the base, tapering as it climbs.
+      const w = width * lerp(1, 0.34, Math.pow(along, 0.8));
+      const soft = lerp(2.6, 1.05, near);
+      const lo = Math.max(0, Math.floor(cx - w * soft));
+      const hi = Math.min(W - 1, Math.ceil(cx + w * soft));
+
+      for (let x = lo; x <= hi; x++) {
+        const d = Math.abs(x - cx) / w;
+        if (d > soft) continue;
+        const p = y * W + x;
+        // Far trunks dissolve into the haze; near ones have a hard edge.
+        const solid = 1 - smoothstep(soft * 0.35, soft, d);
+        const texture = 0.82 + 0.18 * bark(x * 0.02, y * 0.004);
+        field[p] *= 1 - solid * lerp(0.22, 0.97, near) * texture;
+        // A cold edge light on the side that faces the shafts.
+        const rim = Math.exp(-Math.abs(d - soft * 0.55) * 4.5) * (x > lx ? 1 : 0.4);
+        field[p] += rim * solid * lerp(0.16, 0.05, near);
+        if (near > depth[p]) depth[p] = near;
       }
     }
   }
 
-  /* 5. Vignette and copy safe areas -------------------------------------- */
+  /* -------------------------------------------------------- the light --- */
 
+  for (let n = 0; n < comp.rays; n++) {
+    const spread = (n / (comp.rays - 1) - 0.5) * 2;
+    const angle = spread * 0.5 + gaussian(rng, 0, 0.06);
+    const power = lerp(0.35, 1, 1 - Math.abs(spread)) * lerp(0.5, 1, rng());
+    const halfWidth = W * lerp(0.008, 0.032, rng());
+
+    for (let y = 0; y < H; y++) {
+      const travel = (y - ly) / (H - ly);
+      if (travel < 0) continue;
+      const bend = Math.sin(travel * 2.1) * 0.07;
+      const cx = lx + (angle + bend) * travel * W * 0.55;
+      const w = halfWidth * lerp(0.4, 3, travel);
+      const fade = Math.pow(1 - clamp01(travel), 1.7);
+      const lo = Math.max(0, Math.floor(cx - w));
+      const hi = Math.min(W - 1, Math.ceil(cx + w));
+      for (let x = lo; x <= hi; x++) {
+        const d = Math.abs(x - cx) / w;
+        field[y * W + x] += Math.pow(1 - d, 3) * fade * power * 0.34;
+      }
+    }
+  }
+
+  /* The source's halo, just above the frame. */
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const d = Math.hypot((x - lx) / (W * 0.34), (y - ly) / (H * 0.7));
+      if (d > 1) continue;
+      field[y * W + x] += Math.pow(1 - d, 2.4) * 0.75;
+    }
+  }
+
+  /* Ground mist, drifting. */
+  for (let y = 0; y < H; y++) {
+    const v = y / H;
+    const band = smoothstep(0.5, 0.88, v) * (1 - smoothstep(0.9, 1.02, v));
+    if (band <= 0) continue;
+    for (let x = 0; x < W; x++) {
+      const u = x / W;
+      const drift = 0.55 + 0.45 * canopy(x * 0.0022 + 40, y * 0.006);
+      const toward = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 1.35), 2);
+      field[y * W + x] += band * drift * toward * 0.3;
+    }
+  }
+
+  /* The photograph, folded in as organic mottling only. */
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 3;
+      const lum = Math.pow(
+        (0.2126 * forest[i] + 0.7152 * forest[i + 1] + 0.0722 * forest[i + 2]) / 255,
+        2.2,
+      );
+      const p = y * W + x;
+      // Multiplicative, centred on 1: it varies the grove without redrawing it.
+      field[p] *= 0.86 + Math.pow(lum, 0.5) * 0.34;
+    }
+  }
+
+  /* The glow the tree stands in. */
+  const glowR = comp.treeHeight * H * 0.65;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const d = Math.hypot(x - rootX, (y - rootY) * 1.4) / glowR;
+      if (d > 1) continue;
+      field[y * W + x] += Math.pow(1 - d, 2.8) * 0.6;
+    }
+  }
+
+  /* A shoulder before anything is read as colour.
+   *
+   * Every term above is additive, so lit regions run well past 1 and the ramp
+   * would pin them to the sun — turning each soft falloff into a hard-edged
+   * white wedge. The extended Reinhard form rolls the shoulder off while still
+   * letting the brightest zone reach the warm end of the ramp. */
+  // One exposure control, applied once. Every term above is relative; chasing
+  // brightness by re-tuning each of them individually just moves the problem.
+  const EXPOSURE = 2.6;
+  const WHITE = 2.6;
+  for (let i = 0; i < field.length; i++) {
+    const f = Math.max(0, field[i]) * EXPOSURE;
+    field[i] = (f * (1 + f / (WHITE * WHITE))) / (1 + f);
+  }
+
+  /* Vignette and the copy's quiet. */
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const u = x / W;
       const v = y / H;
-      const vig = 1 - Math.pow(Math.hypot((u - 0.5) * 1.1, (v - 0.5) * 1.05), 2.6) * 1.2;
-      const k = clamp01(vig) * (1 - safeMultiplier(comp, x, y));
-      const i = (y * W + x) * 3;
-      rgb[i] *= k;
-      rgb[i + 1] *= k;
-      rgb[i + 2] *= k;
+      const vig = 1 - Math.pow(Math.hypot((u - 0.5) * 1.02, (v - 0.5) * 0.98), 3.2) * 0.7;
+      field[y * W + x] *= clamp01(vig) * (1 - safeMultiplier(comp, x, y));
     }
   }
 
-  /* 6. Quantise ---------------------------------------------------------- */
-
-  quantise(rgb, W, H, (x, y) => {
-    const p = y * W + x;
-    // Coarse cells wherever the dot grammar lives, fine everywhere else.
-    return handCoverage[p] > 0.02 || treeMask[p] > 0.02 ? CELL : 1;
-  }, (x, y) => 1 - safeMultiplier(comp, x, y) * 0.35);
-
-  const rgba = encode(rgb, W, H);
-  console.log(`  composed ${comp.id} (${W}x${H}) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-  return { rgba, sprite: renderGrowthSprite(comp, tree) };
+  return { field, depth };
 }
 
-/* ------------------------------------------------------------- quantise --- */
-
-const BAYER8 = [
-  [0, 32, 8, 40, 2, 34, 10, 42],
-  [48, 16, 56, 24, 50, 18, 58, 26],
-  [12, 44, 4, 36, 14, 46, 6, 38],
-  [60, 28, 52, 20, 62, 30, 54, 22],
-  [3, 35, 11, 43, 1, 33, 9, 41],
-  [51, 19, 59, 27, 49, 17, 57, 25],
-  [15, 47, 7, 39, 13, 45, 5, 37],
-  [63, 31, 55, 23, 61, 29, 53, 21],
-];
+/* --------------------------------------------------------------- stipple --- */
 
 /**
- * Ordered-dither the frame onto the palette.
+ * Render the field as points.
  *
- * Cell size varies: the photographic forest dithers at one pixel and reads as
- * fine film grain, while the hand and spores dither at CELL and read as the
- * discrete dots the source halftone is made of.
+ * Placement is stratified with jitter — near enough to blue noise that no
+ * pattern emerges, and far cheaper than a real relaxation. Each candidate
+ * survives with probability proportional to the local light, so density *is*
+ * the image. Size falls with depth and rises slightly in the highlights, which
+ * is what makes near trunks feel coarse and the far canopy feel like air.
  */
-function quantise(rgb, W, H, cellAt, strengthAt) {
-  const lum = RAMP.map((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
-  const last = RAMP.length - 1;
-
-  const rampIndex = (l) => {
-    if (l <= lum[0]) return 0;
-    if (l >= lum[last]) return last;
-    let i = 0;
-    while (i < last && lum[i + 1] < l) i++;
-    const span = lum[i + 1] - lum[i];
-    return i + (span > 1e-9 ? (l - lum[i]) / span : 0);
-  };
-
-  for (let y = 0; y < H; y++) {
-    for (let x = 0; x < W; x++) {
-      const i = (y * W + x) * 3;
-      const l = clamp01(0.2126 * rgb[i] + 0.7152 * rgb[i + 1] + 0.0722 * rgb[i + 2]);
-      const f = rampIndex(l);
-      const cell = cellAt(x, y);
-      const bx = cell > 1 ? Math.floor(x / cell) & 7 : x & 7;
-      const by = cell > 1 ? Math.floor(y / cell) & 7 : y & 7;
-      const threshold = (BAYER8[by][bx] + 0.5) / 64 - 0.5;
-      const index = Math.max(0, Math.min(last, Math.floor(f + threshold * strengthAt(x, y) + 0.5)));
-      const c = RAMP[index];
-      rgb[i] = c[0];
-      rgb[i + 1] = c[1];
-      rgb[i + 2] = c[2];
-    }
-  }
-}
-
-function encode(rgb, W, H) {
-  const out = Buffer.allocUnsafe(W * H * 4);
-  for (let p = 0; p < W * H; p++) {
-    for (let c = 0; c < 3; c++) {
-      out[p * 4 + c] = Math.round(Math.pow(clamp01(rgb[p * 3 + c]), 1 / 2.2) * 255);
-    }
-    out[p * 4 + 3] = 255;
-  }
-  return out;
-}
-
-/* --------------------------------------------------------- growth sprite --- */
-
-/**
- * The tree's growth, pre-rendered as frames.
- *
- * Each particle carries its distance from the root *along the wood*, so
- * thresholding that value frame by frame makes the tree grow through its own
- * branches. No runtime engine: the browser plays this with CSS steps().
- */
-function renderGrowthSprite(comp, tree) {
+function stipple(canvas, comp, field, depth, rng, count) {
   const { width: W, height: H } = comp;
-  const scale = (comp.treeHeight * H) / tree.bounds.maxY;
-  const palmX = comp.palm.x * W;
-  const palmY = comp.palm.y * H;
+  const cells = Math.ceil(Math.sqrt(count));
+  const stepX = W / cells;
+  const stepY = H / cells;
 
-  const margin = scale * 0.12;
-  const left = palmX + tree.bounds.minX * scale - margin;
-  const right = palmX + tree.bounds.maxX * scale + margin;
-  const top = palmY - tree.bounds.maxY * scale - margin;
-  const bottom = palmY - tree.bounds.minY * scale + margin;
+  for (let gy = 0; gy < cells; gy++) {
+    for (let gx = 0; gx < cells; gx++) {
+      const x = (gx + rng()) * stepX;
+      const y = (gy + rng()) * stepY;
+      const px = Math.min(W - 1, Math.max(0, Math.round(x)));
+      const py = Math.min(H - 1, Math.max(0, Math.round(y)));
+      const p = py * W + px;
 
-  const fw = Math.ceil((right - left) / CELL);
-  const fh = Math.ceil((bottom - top) / CELL);
-  const sheet = Buffer.alloc(fw * fh * GROWTH_FRAMES * 4);
-  const particles = sampleTreeParticles(tree, makeRng(`${SEED}:sprite`), Math.round(fw * fh * 1.7));
+      const t = clamp01(field[p]);
+      // Survival curve: the dark keeps a scattering of points so it reads as
+      // air rather than as a hole, but the light is where the ink goes.
+      const survive = Math.pow(t, 0.92) * 0.99 + 0.025;
+      if (rng() > survive) continue;
 
-  for (let f = 0; f < GROWTH_FRAMES; f++) {
-    const t = f / (GROWTH_FRAMES - 1);
-    const growth = t * t * (3 - 2 * t);
-    const base = f * fw * fh * 4;
+      const d = depth[p];
+      // Slight tone jitter per point. Perfectly uniform colour is what makes
+      // computed stipple look computed.
+      const tone = clamp01(t + gaussian(rng, 0, 0.045));
+      const colour = ramp(tone);
 
-    for (const p of particles) {
-      if (p.birth > growth) continue;
-      const age = Math.min(1, (growth - p.birth) * 6);
-      const alpha = p.alpha * (0.45 + 0.55 * age);
-      const px = Math.floor((palmX + p.x * scale - left) / CELL);
-      const py = Math.floor((palmY - p.y * scale - top) / CELL);
-      const size = p.big ? 2 : 1;
-      for (let dy = 0; dy < size; dy++) {
-        for (let dx = 0; dx < size; dx++) {
-          const ix = px + dx;
-          const iy = py + dy;
-          if (ix < 0 || iy < 0 || ix >= fw || iy >= fh) continue;
-          const o = base + (iy * fw + ix) * 4;
-          sheet[o] = Math.min(255, sheet[o] + p.colour[0] * alpha);
-          sheet[o + 1] = Math.min(255, sheet[o + 1] + p.colour[1] * alpha);
-          sheet[o + 2] = Math.min(255, sheet[o + 2] + p.colour[2] * alpha);
-          sheet[o + 3] = Math.min(255, sheet[o + 3] + 255 * alpha);
-        }
-      }
+      // Warm the highlights and cool the shadows a further step apart — the
+      // ramp already does this, and pushing it at the extremes is what makes
+      // the image feel lit rather than tinted.
+      const warm = smoothstep(0.6, 1, tone);
+      const cool = 1 - smoothstep(0.05, 0.45, tone);
+      const c = [
+        colour[0] * (1 + warm * 0.18 - cool * 0.25),
+        colour[1] * (1 + warm * 0.06),
+        colour[2] * (1 - warm * 0.22 + cool * 0.3),
+      ];
+
+      const radius = lerp(0.55, 2.3, Math.pow(d, 1.4)) * lerp(0.85, 1.3, tone);
+      const intensity = lerp(0.3, 1.5, tone) * lerp(1, 0.72, d);
+      canvas.point(x, y, radius, c, intensity);
     }
   }
-
-  return {
-    buffer: sheet,
-    frameWidth: fw,
-    frameHeight: fh,
-    frames: GROWTH_FRAMES,
-    rect: { x: left / W, y: top / H, width: (right - left) / W, height: (bottom - top) / H },
-  };
 }
 
-function sampleTreeParticles(tree, rng, count) {
+/* ------------------------------------------------------------------ tree --- */
+
+/** Points of the tree, in tree-local units, with their growth order. */
+function treeParticles(tree, rng, count) {
   const weights = tree.segments.map((s) => {
     const len = Math.hypot(s.x1 - s.x0, s.y1 - s.y0);
     return len * Math.pow((s.w0 + s.w1) * 0.5, 0.55);
@@ -503,29 +491,25 @@ function sampleTreeParticles(tree, rng, count) {
     return lo;
   };
 
-  const toByte = (c) => c.map((v) => Math.round(Math.pow(clamp01(v), 1 / 2.2) * 255));
-  const colCore = toByte(TREE_CORE);
-  const colMid = toByte(TREE_MID);
-  const colTip = toByte(TREE_TIP);
-
   const out = [];
-  const wood = Math.round(count * 0.42);
+  const wood = Math.round(count * 0.4);
 
   for (let i = 0; i < wood; i++) {
     const seg = tree.segments[pick(rng())];
     const t = rng();
     const birth = lerp(seg.p0, seg.p1, t);
     const w = lerp(seg.w0, seg.w1, t);
-    const spread = lerp(0.55, 2.2, Math.pow(birth, 1.5));
+    const spread = lerp(0.5, 2.1, Math.pow(birth, 1.5));
     const off = (rng() + rng() + rng() - 1.5) * spread;
     const core = clamp01(1 - Math.abs(off) / 1.4);
     out.push({
       x: lerp(seg.x0, seg.x1, t) + off * w,
       y: lerp(seg.y0, seg.y1, t) + gaussian(rng, 0, w * 0.4 * spread),
       birth,
-      alpha: lerp(0.07, 0.30, core * core) * lerp(1, 0.6, birth),
-      big: core > 0.62 && rng() < 0.16,
-      colour: birth < 0.35 ? colCore : birth < 0.7 ? colMid : colTip,
+      // Heartwood burns near white; the outer wood cools to jade.
+      tone: lerp(0.58, 0.93, core * core) * lerp(1, 0.86, birth),
+      alpha: lerp(0.06, 0.24, core * core) * lerp(1, 0.66, birth),
+      radius: lerp(0.6, 1.5, core),
     });
   }
 
@@ -534,16 +518,15 @@ function sampleTreeParticles(tree, rng, count) {
     const n = Math.round(((count - wood) * cl.density) / densityTotal);
     for (let i = 0; i < n; i++) {
       const ang = rng() * Math.PI * 2;
-      const rad = Math.pow(rng(), 0.42) * cl.r * lerp(0.85, 1.35, rng());
-      const falloff = clamp01(1 - rad / (cl.r * 1.35));
+      const rad = Math.pow(rng(), 0.45) * cl.r * lerp(0.8, 1.4, rng());
+      const falloff = clamp01(1 - rad / (cl.r * 1.4));
       out.push({
         x: cl.x + Math.cos(ang) * rad,
-        y: cl.y + Math.sin(ang) * rad * 0.8,
-        // Leaves open just after the branch that carries them.
-        birth: clamp01(cl.path + rng() * 0.05),
-        alpha: Math.pow(falloff, 1.1) * lerp(0.1, 0.34, rng()) * cl.density,
-        big: false,
-        colour: colTip,
+        y: cl.y + Math.sin(ang) * rad * 0.82,
+        birth: clamp01(cl.path + rng() * 0.06),
+        tone: lerp(0.52, 0.8, falloff),
+        alpha: Math.pow(falloff, 1.2) * lerp(0.05, 0.18, rng()) * cl.density,
+        radius: lerp(0.55, 1.1, rng()),
       });
     }
   }
@@ -551,92 +534,184 @@ function sampleTreeParticles(tree, rng, count) {
   return out;
 }
 
+/**
+ * The growth, pre-rendered as frames.
+ *
+ * Every point knows its distance from the root along the wood, so thresholding
+ * that value frame by frame grows the tree through its own branches. The
+ * browser plays it with a CSS steps() function — there is no engine.
+ */
+function renderGrowth(comp, tree, rng) {
+  const { width: W, height: H } = comp;
+  const scale = (comp.treeHeight * H) / tree.bounds.maxY;
+  const rootX = comp.root.x * W;
+  const rootY = comp.root.y * H;
+
+  const margin = scale * 0.14;
+  const left = rootX + tree.bounds.minX * scale - margin;
+  const right = rootX + tree.bounds.maxX * scale + margin;
+  const top = rootY - tree.bounds.maxY * scale - margin;
+  const bottom = rootY - tree.bounds.minY * scale + margin;
+
+  // Frames render at half the plate's resolution: the sheet is 32 frames deep
+  // and the tree is soft-edged, so the halving is invisible and the file is a
+  // quarter the size.
+  const SS = 2;
+  const fw = Math.ceil((right - left) / SS);
+  const fh = Math.ceil((bottom - top) / SS);
+  const particles = treeParticles(tree, rng, Math.round(fw * fh * 0.85));
+  const sheet = Buffer.alloc(fw * fh * GROWTH_FRAMES * 4);
+
+  for (let f = 0; f < GROWTH_FRAMES; f++) {
+    const t = f / (GROWTH_FRAMES - 1);
+    const growth = t * t * (3 - 2 * t);
+    const frame = new Canvas(fw, fh);
+
+    for (const p of particles) {
+      if (p.birth > growth) continue;
+      // Points flare as they open, then settle — germination, not a fade-in.
+      const age = clamp01((growth - p.birth) * 5);
+      const flare = 1 + (1 - age) * 0.6;
+      frame.point(
+        (rootX + p.x * scale - left) / SS,
+        (rootY - p.y * scale - top) / SS,
+        p.radius * 0.85 + 0.4,
+        ramp(p.tone),
+        p.alpha * (0.4 + 0.6 * age) * flare,
+      );
+    }
+
+    const base = f * fw * fh * 4;
+    for (let i = 0; i < fw * fh; i++) {
+      let peak = 0;
+      for (let c = 0; c < 3; c++) {
+        const v = frame.data[i * 3 + c];
+        const enc = Math.round(Math.pow(clamp01(v / (1 + v * 0.5)), 1 / 2.2) * 255);
+        sheet[base + i * 4 + c] = enc;
+        if (enc > peak) peak = enc;
+      }
+      // Alpha follows the brightest channel, so the sprite composites over the
+      // plate without a black box around it.
+      sheet[base + i * 4 + 3] = Math.min(255, Math.round(peak * 1.25));
+    }
+  }
+
+  return {
+    buffer: sheet,
+    frameWidth: fw,
+    frameHeight: fh,
+    frames: GROWTH_FRAMES,
+    rect: { x: left / W, y: top / H, width: (right - left) / W, height: (bottom - top) / H },
+  };
+}
+
+/* ---------------------------------------------------------------- encode --- */
+
+function encode(canvas) {
+  const { width, height, data } = canvas;
+  const out = Buffer.allocUnsafe(width * height * 4);
+  for (let p = 0; p < width * height; p++) {
+    for (let c = 0; c < 3; c++) {
+      const v = data[p * 3 + c];
+      // Reinhard shoulder: the shafts can pile up without clipping to white.
+      const mapped = v / (1 + v * 0.42);
+      out[p * 4 + c] = Math.round(Math.pow(clamp01(mapped), 1 / 2.2) * 255);
+    }
+    out[p * 4 + 3] = 255;
+  }
+  return out;
+}
+
 /* ------------------------------------------------------------------ main --- */
 
 async function main() {
-  console.log("ALSOS hero");
+  console.log("ALSOS grove");
   await mkdir(OUT, { recursive: true });
 
-  const tree = generateTree({ seed: SEED });
+  const tree = generateTree({ seed: SEED, spread: 0.46, depth: 8 });
   await writeFile(path.join(OUT, "tree-skeleton.json"), JSON.stringify(serializeTree(tree)));
 
   const entries = [];
-  for (const comp of COMPOSITIONS) {
+  const only = process.env.HERO_ONLY;
+  for (const comp of COMPOSITIONS.filter((c) => !only || c.id === only)) {
+    const t0 = Date.now();
     const dir = path.join(OUT, comp.id);
     await mkdir(dir, { recursive: true });
-    const { rgba, sprite } = await renderComposition(comp, tree);
-    const { width: W, height: H } = comp;
-    const base = sharp(rgba, { raw: { width: W, height: H, channels: 4 } });
-    const name = `hero-${comp.id}`;
 
-    const widths = [0.4, 0.6, 0.8, 1].map((f) => Math.round((W * f) / 2) * 2);
+    const rng = makeRng(`${SEED}:${comp.id}`);
+    const forest = await loadForest(path.join(SRC, "forest.jpg"), comp.width, comp.height, comp.forestFocus);
+    const { field, depth } = buildField(comp, forest, rng);
+
+    const canvas = new Canvas(comp.width, comp.height);
+    stipple(canvas, comp, field, depth, rng, comp.points);
+
+    const growth = renderGrowth(comp, tree, makeRng(`${SEED}:tree:${comp.id}`));
+    const base = sharp(encode(canvas), {
+      raw: { width: comp.width, height: comp.height, channels: 4 },
+    });
+
+    const name = `grove-${comp.id}`;
+    const widths = [0.4, 0.6, 0.8, 1].map((f) => Math.round((comp.width * f) / 2) * 2);
     const avif = [];
     const webp = [];
     for (const w of widths) {
-      const suffix = w === W ? "" : `-${w}`;
-      const scaled = w === W ? base.clone() : base.clone().resize(w);
-      await scaled.clone().avif({ quality: 70, effort: 4 }).toFile(path.join(dir, `${name}${suffix}.avif`));
-      await scaled.clone().webp({ quality: 86, effort: 4 }).toFile(path.join(dir, `${name}${suffix}.webp`));
+      const suffix = w === comp.width ? "" : `-${w}`;
+      const scaled = w === comp.width ? base.clone() : base.clone().resize(w);
+      await scaled.clone().avif({ quality: 72, effort: 4 }).toFile(path.join(dir, `${name}${suffix}.avif`));
+      await scaled.clone().webp({ quality: 88, effort: 4 }).toFile(path.join(dir, `${name}${suffix}.webp`));
       avif.push({ w, src: `/assets/hero/${comp.id}/${name}${suffix}.avif` });
       webp.push({ w, src: `/assets/hero/${comp.id}/${name}${suffix}.webp` });
     }
 
-    await sharp(sprite.buffer, {
-      raw: { width: sprite.frameWidth, height: sprite.frameHeight * sprite.frames, channels: 4 },
+    await sharp(growth.buffer, {
+      raw: { width: growth.frameWidth, height: growth.frameHeight * growth.frames, channels: 4 },
     })
-      .png({ compressionLevel: 9, palette: true })
-      .toFile(path.join(dir, `tree-growth-${comp.id}.png`));
+      .png({ compressionLevel: 9 })
+      .toFile(path.join(dir, `tree-${comp.id}.png`));
 
     const lqip = await base.clone().resize(16).webp({ quality: 50 }).toBuffer();
 
     entries.push({
       id: comp.id,
       media: comp.media,
-      width: W,
-      height: H,
+      width: comp.width,
+      height: comp.height,
       poster: { avif, webp },
       lqip: `data:image/webp;base64,${lqip.toString("base64")}`,
       growth: {
-        src: `/assets/hero/${comp.id}/tree-growth-${comp.id}.png`,
-        frames: sprite.frames,
-        frameWidth: sprite.frameWidth,
-        frameHeight: sprite.frameHeight,
-        rect: sprite.rect,
+        src: `/assets/hero/${comp.id}/tree-${comp.id}.png`,
+        frames: growth.frames,
+        frameWidth: growth.frameWidth,
+        frameHeight: growth.frameHeight,
+        rect: growth.rect,
       },
-      palm: comp.palm,
+      root: comp.root,
       light: comp.light,
       treeHeight: comp.treeHeight,
       safe: comp.safe,
-      referenceViewport: { width: 1536, height: 605 },
-      focalPoint: { x: 0.5566, y: 0.4463 },
-      copySafeArea: { x: 0.0521, y: 0.2727, width: 0.235, height: 0.47 },
-      metricsSafeArea: { x: 0.918, y: 0.3355, width: 0.065, height: 0.38 },
     });
+
+    console.log(
+      `  ${comp.id} (${comp.width}x${comp.height}) — ${(comp.points / 1000).toFixed(0)}k points in ${((Date.now() - t0) / 1000).toFixed(1)}s`,
+    );
   }
 
-  const og = COMPOSITIONS[0];
-  await sharp(path.join(OUT, og.id, `hero-${og.id}.webp`))
-    .extract({
-      left: Math.round(og.width * 0.3),
-      top: 0,
-      width: Math.round(og.width * 0.48),
-      height: og.height,
-    })
+  if (only) return;
+
+  await sharp(path.join(OUT, "desktop", "grove-desktop.webp"))
+    .extract({ left: Math.round(3200 * 0.3), top: 0, width: Math.round(3200 * 0.48), height: 1260 })
     .resize(1200, 630, { fit: "cover" })
-    .jpeg({ quality: 86 })
+    .jpeg({ quality: 88 })
     .toFile(path.join(OUT, "og-image-1200x630.jpg"));
 
   await writeFile(
     path.join(OUT, "manifest.json"),
     JSON.stringify(
       {
-        version: 2,
+        version: 3,
         seed: SEED,
         generatedBy: "scripts/build-hero.mjs",
-        sources: {
-          forest: "art/source/forest.jpg",
-          hand: "art/source/hand-dots.jpg",
-        },
+        sources: { forest: "art/source/forest.jpg" },
         skeleton: "/assets/hero/tree-skeleton.json",
         og: "/assets/hero/og-image-1200x630.jpg",
         compositions: entries,

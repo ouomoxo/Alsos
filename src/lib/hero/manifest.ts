@@ -33,8 +33,8 @@ export type HeroComposition = {
   };
   /** Inline blur placeholder so the frame is never empty. */
   lqip: string;
-  /** Normalised anchor where the tree meets the palm. */
-  palm: { x: number; y: number };
+  /** Normalised anchor where the tree meets the ground. */
+  root: { x: number; y: number };
   light: { x: number; y: number };
   treeHeight: number;
   safe: SafeArea[];
@@ -46,8 +46,8 @@ export type HeroManifest = {
   skeleton: string;
   og: string;
   compositions: HeroComposition[];
-  /** Source photographs the plate was composited from. */
-  sources: { forest: string; hand: string };
+  /** Source photograph the grove's mottling is drawn from. */
+  sources: { forest: string };
 };
 
 export const heroManifest = manifestJson as HeroManifest;
@@ -69,7 +69,5 @@ export function compositionById(id: string): HeroComposition {
 
 /** The composition the WebGL layer aligns to for a given viewport aspect. */
 export function pickComposition(width: number, height: number): HeroComposition {
-  if (width < 768) return compositionById("mobile-portrait");
-  if (width / height >= 1.9) return compositionById("desktop-ultrawide");
-  return compositionById("desktop-standard");
+  return compositionById(width < 768 ? "mobile" : "desktop");
 }

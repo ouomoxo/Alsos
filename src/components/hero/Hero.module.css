@@ -41,6 +41,8 @@
   /* Warm off-white, not pure white — the headline belongs to the grove's
      palette rather than sitting on top of it as a separate material. */
   color: var(--text-primary);
+  /* The light in the plate falls on the type too. */
+  text-shadow: 0 0 42px rgba(227, 221, 155, 0.16);
 }
 
 .body {
@@ -61,12 +63,15 @@
   height: 42px;
   margin-top: 22px;
   border: 1px solid var(--border-active);
-  border-radius: 3px;
+  /* A little curve. The grove has none of the grid's right angles in it, and
+     the one control on the screen should not either. */
+  border-radius: 21px;
   color: var(--spore-200);
   font-family: var(--font-label);
   font-size: var(--button-size);
   letter-spacing: 0.02em;
   text-decoration: none;
+  box-shadow: var(--glow-subtle);
   transition:
     background-color var(--motion-control) var(--ease-out),
     color var(--motion-control) var(--ease-out),
@@ -104,6 +109,7 @@
 
 .railIndex {
   font-family: var(--font-ui);
+  text-shadow: var(--glow-subtle);
   font-size: var(--metric-value-size);
   line-height: 1;
   color: var(--spore-300);

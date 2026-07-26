@@ -16,7 +16,7 @@ import styles from "./Hero.module.css";
  */
 export function HeroTree() {
   // PR1 desktop frame; the responsive art lands with the other breakpoints.
-  const composition = compositionById("desktop-ultrawide");
+  const composition = compositionById("desktop");
   const growth = composition.growth;
 
   return (

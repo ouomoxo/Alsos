@@ -14,7 +14,7 @@ import styles from "./HeroPoster.module.css";
 export function HeroPoster() {
   // The desktop frame is the <img> fallback, used when a browser ignores
   // every <source>.
-  const fallback = compositionById("desktop-ultrawide");
+  const fallback = compositionById("desktop");
 
   return (
     <div className={styles.poster} aria-hidden="true">

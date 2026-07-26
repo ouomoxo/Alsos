@@ -1,16 +1,15 @@
 {
-  "version": 2,
-  "seed": "alsos-hero-v1",
+  "version": 3,
+  "seed": "alsos-grove-v1",
   "generatedBy": "scripts/build-hero.mjs",
   "sources": {
-    "forest": "art/source/forest.jpg",
-    "hand": "art/source/hand-dots.jpg"
+    "forest": "art/source/forest.jpg"
   },
   "skeleton": "/assets/hero/tree-skeleton.json",
   "og": "/assets/hero/og-image-1200x630.jpg",
   "compositions": [
     {
-      "id": "desktop-ultrawide",
+      "id": "desktop",
       "media": "(min-width: 768px)",
       "width": 3200,
       "height": 1260,
@@ -18,102 +17,82 @@
         "avif": [
           {
             "w": 1280,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-1280.avif"
+            "src": "/assets/hero/desktop/grove-desktop-1280.avif"
           },
           {
             "w": 1920,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-1920.avif"
+            "src": "/assets/hero/desktop/grove-desktop-1920.avif"
           },
           {
             "w": 2560,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-2560.avif"
+            "src": "/assets/hero/desktop/grove-desktop-2560.avif"
           },
           {
             "w": 3200,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide.avif"
+            "src": "/assets/hero/desktop/grove-desktop.avif"
           }
         ],
         "webp": [
           {
             "w": 1280,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-1280.webp"
+            "src": "/assets/hero/desktop/grove-desktop-1280.webp"
           },
           {
             "w": 1920,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-1920.webp"
+            "src": "/assets/hero/desktop/grove-desktop-1920.webp"
           },
           {
             "w": 2560,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-2560.webp"
+            "src": "/assets/hero/desktop/grove-desktop-2560.webp"
           },
           {
             "w": 3200,
-            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide.webp"
+            "src": "/assets/hero/desktop/grove-desktop.webp"
           }
         ]
       },
-      "lqip": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAACQAQCdASoQAAYAAsBMJZwAAiA5ppAA/vplcadFOkOtqoJlXewuJiB7jCAAAA==",
+      "lqip": "data:image/webp;base64,UklGRj4AAABXRUJQVlA4IDIAAADQAQCdASoQAAYAAsBMJZQAAuuWGmiIcAD++25TKB8frV1NvI8f/nLjplk0bewyy+fAAA==",
       "growth": {
-        "src": "/assets/hero/desktop-ultrawide/tree-growth-desktop-ultrawide.png",
-        "frames": 30,
-        "frameWidth": 141,
-        "frameHeight": 211,
+        "src": "/assets/hero/desktop/tree-desktop.png",
+        "frames": 32,
+        "frameWidth": 276,
+        "frameHeight": 404,
         "rect": {
-          "x": 0.4709466565658646,
-          "y": 0.12402825007054118,
-          "width": 0.17609207088721035,
-          "height": 0.6682302215311777
+          "x": 0.42404788395991844,
+          "y": 0.3497380022073069,
+          "width": 0.17242688498670355,
+          "height": 0.6409240161362273
         }
       },
-      "palm": {
-        "x": 0.5566,
-        "y": 0.7
+      "root": {
+        "x": 0.54,
+        "y": 0.9
       },
       "light": {
-        "x": 0.5566,
-        "y": 0.02
+        "x": 0.54,
+        "y": -0.14
       },
-      "treeHeight": 0.55,
+      "treeHeight": 0.52,
       "safe": [
         {
           "edge": "left",
-          "extent": 0.44,
-          "strength": 0.9
+          "extent": 0.4,
+          "strength": 0.62
         },
         {
           "edge": "right",
-          "extent": 0.16,
-          "strength": 0.78
+          "extent": 0.14,
+          "strength": 0.6
         },
         {
           "edge": "top",
-          "extent": 0.15,
-          "strength": 0.6
+          "extent": 0.13,
+          "strength": 0.55
         }
-      ],
-      "referenceViewport": {
-        "width": 1536,
-        "height": 605
-      },
-      "focalPoint": {
-        "x": 0.5566,
-        "y": 0.4463
-      },
-      "copySafeArea": {
-        "x": 0.0521,
-        "y": 0.2727,
-        "width": 0.235,
-        "height": 0.47
-      },
-      "metricsSafeArea": {
-        "x": 0.918,
-        "y": 0.3355,
-        "width": 0.065,
-        "height": 0.38
-      }
+      ]
     },
     {
-      "id": "mobile-portrait",
+      "id": "mobile",
       "media": "(max-width: 767px)",
       "width": 1440,
       "height": 1920,
@@ -121,94 +100,74 @@
         "avif": [
           {
             "w": 576,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-576.avif"
+            "src": "/assets/hero/mobile/grove-mobile-576.avif"
           },
           {
             "w": 864,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-864.avif"
+            "src": "/assets/hero/mobile/grove-mobile-864.avif"
           },
           {
             "w": 1152,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-1152.avif"
+            "src": "/assets/hero/mobile/grove-mobile-1152.avif"
           },
           {
             "w": 1440,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait.avif"
+            "src": "/assets/hero/mobile/grove-mobile.avif"
           }
         ],
         "webp": [
           {
             "w": 576,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-576.webp"
+            "src": "/assets/hero/mobile/grove-mobile-576.webp"
           },
           {
             "w": 864,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-864.webp"
+            "src": "/assets/hero/mobile/grove-mobile-864.webp"
           },
           {
             "w": 1152,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-1152.webp"
+            "src": "/assets/hero/mobile/grove-mobile-1152.webp"
           },
           {
             "w": 1440,
-            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait.webp"
+            "src": "/assets/hero/mobile/grove-mobile.webp"
           }
         ]
       },
-      "lqip": "data:image/webp;base64,UklGRkgAAABXRUJQVlA4IDwAAACQAwCdASoQABUAPtFUo0uoJKMhsAgBABoJZwAAW+up1duZ5XwAAP71Z5iBzvTN3HVkUwvMZ2eGGZCgAAA=",
+      "lqip": "data:image/webp;base64,UklGRkQAAABXRUJQVlA4IDgAAADwAgCdASoQABUAPtFWo0uoJKMhsAgBABoJZwDLLDBsAAD+8VlBF54H/KEMMWelf1VjoLLJhEYAAA==",
       "growth": {
-        "src": "/assets/hero/mobile-portrait/tree-growth-mobile-portrait.png",
-        "frames": 30,
-        "frameWidth": 141,
-        "frameHeight": 210,
+        "src": "/assets/hero/mobile/tree-mobile.png",
+        "frames": 32,
+        "frameWidth": 324,
+        "frameHeight": 474,
         "rect": {
-          "x": 0.31015362840572597,
-          "y": 0.17300030913708161,
-          "width": 0.3902993086331241,
-          "height": 0.4373870540931345
+          "x": 0.19796762610642166,
+          "y": 0.23672154015946692,
+          "width": 0.4491379991513646,
+          "height": 0.49301847395094417
         }
       },
-      "palm": {
+      "root": {
         "x": 0.5,
-        "y": 0.55
+        "y": 0.66
       },
       "light": {
         "x": 0.5,
-        "y": 0.04
+        "y": -0.1
       },
-      "treeHeight": 0.36,
+      "treeHeight": 0.4,
       "safe": [
         {
           "edge": "bottom",
-          "extent": 0.5,
+          "extent": 0.46,
           "strength": 0.9
         },
         {
           "edge": "top",
-          "extent": 0.1,
-          "strength": 0.55
+          "extent": 0.09,
+          "strength": 0.5
         }
-      ],
-      "referenceViewport": {
-        "width": 1536,
-        "height": 605
-      },
-      "focalPoint": {
-        "x": 0.5566,
-        "y": 0.4463
-      },
-      "copySafeArea": {
-        "x": 0.0521,
-        "y": 0.2727,
-        "width": 0.235,
-        "height": 0.47
-      },
-      "metricsSafeArea": {
-        "x": 0.918,
-        "y": 0.3355,
-        "width": 0.065,
-        "height": 0.38
-      }
+      ]
     }
   ]
 }
