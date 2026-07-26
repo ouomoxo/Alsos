@@ -12,9 +12,9 @@ import styles from "./HeroPoster.module.css";
  * so the <source> media queries match the compositions the generator produced.
  */
 export function HeroPoster() {
-  // The standard desktop frame is the <img> fallback: it is the composition
-  // that degrades most gracefully if a browser ignores every <source>.
-  const fallback = compositionById("desktop-standard");
+  // The desktop frame is the <img> fallback, used when a browser ignores
+  // every <source>.
+  const fallback = compositionById("desktop-ultrawide");
 
   return (
     <div className={styles.poster} aria-hidden="true">

@@ -9,7 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "assets:hero": "node scripts/generate-hero-assets.mjs",
+    "assets:hero": "node scripts/build-hero.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"

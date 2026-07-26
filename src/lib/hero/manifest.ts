@@ -23,8 +23,6 @@ export type HeroComposition = {
   width: number;
   height: number;
   poster: { avif: PosterSource[]; webp: PosterSource[] };
-  /** The frame with no tree — the growth sprite animates against it. */
-  cleanPlate: string;
   /** Pre-rendered growth animation. No runtime 3D. */
   growth: {
     src: string;
@@ -48,7 +46,8 @@ export type HeroManifest = {
   skeleton: string;
   og: string;
   compositions: HeroComposition[];
-  palette: Record<string, string>;
+  /** Source photographs the plate was composited from. */
+  sources: { forest: string; hand: string };
 };
 
 export const heroManifest = manifestJson as HeroManifest;
