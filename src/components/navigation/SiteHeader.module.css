@@ -1,0 +1,174 @@
+/** Header geometry from §6: logo at 2.60%/4.79%, navigation at 70.64%/4.13%. */
+.header {
+  position: absolute;
+  inset-inline: 2.6042%;
+  top: 4.13%;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-primary);
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.logo:hover {
+  color: var(--spore-200);
+}
+
+.nav {
+  margin-left: auto;
+}
+
+.navList {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+}
+
+.navLink {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  font-family: var(--font-ui);
+  font-size: var(--nav-size);
+  letter-spacing: var(--nav-tracking);
+  color: var(--text-secondary);
+  transition: color var(--motion-control) var(--ease-out);
+}
+
+.navLink:hover {
+  color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.login {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  font-family: var(--font-ui);
+  font-size: var(--nav-size);
+  letter-spacing: var(--nav-tracking);
+  color: var(--text-secondary);
+}
+
+.login:hover {
+  color: var(--text-primary);
+}
+
+.start {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding-inline: 16px;
+  border: 1px solid var(--border-default);
+  border-radius: 3px;
+  font-family: var(--font-ui);
+  font-size: var(--nav-size);
+  letter-spacing: var(--nav-tracking);
+  color: var(--text-primary);
+  transition:
+    border-color var(--motion-control) var(--ease-out),
+    color var(--motion-control) var(--ease-out);
+}
+
+.start:hover {
+  border-color: var(--border-active);
+  color: var(--spore-200);
+}
+
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -12px;
+  color: var(--text-primary);
+  background: none;
+  cursor: pointer;
+}
+
+@media (max-width: 1023px) {
+  .nav,
+  .login {
+    display: none;
+  }
+
+  .menuButton {
+    display: inline-flex;
+  }
+}
+
+/* ---------------------------------------------------------- mobile modal -- */
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 11, 12, 0.9);
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--forest-900);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 var(--gutter) var(--space-12);
+  outline: none;
+}
+
+.dialogHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  color: var(--text-primary);
+}
+
+.dialogList {
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--space-8);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dialogLink {
+  display: flex;
+  align-items: center;
+  min-height: 64px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-ui);
+  font-size: 1.125rem;
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.dialogLink:hover {
+  color: var(--spore-200);
+}
+
+.dialogLogin {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  margin-top: var(--space-8);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  color: var(--spore-200);
+}

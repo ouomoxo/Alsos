@@ -1,0 +1,26 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  object-fit: fill;
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.overlay[data-mode="difference"] {
+  opacity: 1;
+  mix-blend-mode: difference;
+}
+
+/* 8px module grid — the same grid the icons and wordmark are drawn on. */
+.grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  background-image:
+    repeating-linear-gradient(to right, rgba(233, 233, 140, 0.22) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(to bottom, rgba(233, 233, 140, 0.22) 0 1px, transparent 1px 8px);
+}

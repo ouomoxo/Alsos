@@ -20,11 +20,12 @@
   object-fit: cover;
   /* Desktop art is composed with the tree right of centre; hold that anchor
      when the viewport is a different shape than the source frame. */
-  object-position: 58% 50%;
-  /* This is pixel art shipped at its native resolution: the browser must
-     upscale it with nearest-neighbour, or the hard cell edges the whole look
-     depends on get smoothed into mush. */
-  image-rendering: pixelated;
+  /* Hold the canonical focal point (§9): the tree, at 55.66% / 44.63%. */
+  object-position: 55.66% 44.63%;
+  /* Deliberately NOT image-rendering: pixelated. §5.1 keeps the forest
+     cinematic; only the tree and hand carry the pixel grid, and they are baked
+     into this full-resolution plate at 4px cells. Forcing nearest-neighbour
+     here would alias the forest and the light. */
 
   /* The LQIP is painted as a background so the box is never empty while the
      full frame decodes. */

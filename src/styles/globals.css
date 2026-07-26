@@ -25,8 +25,8 @@ html {
 }
 
 body {
-  background: var(--alsos-void);
-  color: var(--alsos-text-primary);
+  background: var(--void-950);
+  color: var(--text-primary);
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: 1.6;
@@ -87,7 +87,7 @@ ol {
 
 /* Focus rings are never removed (§15). */
 :focus-visible {
-  outline: 2px solid var(--alsos-spore);
+  outline: 2px solid var(--spore-200);
   outline-offset: 3px;
   border-radius: var(--radius-xs);
 }
@@ -114,8 +114,8 @@ ol {
   left: var(--space-2);
   z-index: 100;
   padding: var(--space-3) var(--space-4);
-  background: var(--alsos-spore);
-  color: var(--alsos-text-inverse);
+  background: var(--spore-200);
+  color: var(--void-950);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   transform: translateY(-200%);
@@ -167,12 +167,12 @@ ol {
 }
 
 ::selection {
-  background: var(--alsos-spore);
-  color: var(--alsos-text-inverse);
+  background: var(--spore-200);
+  color: var(--void-950);
 }
 
 /* Scrollbar reads as forest floor, not a default grey rail. */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--alsos-moss-deep) transparent;
+  scrollbar-color: var(--moss-700) transparent;
 }

@@ -1,36 +1,22 @@
 import { Hero } from "@/components/hero/Hero";
-import { FinalCta } from "@/components/sections/FinalCta";
-import { GardenMapping } from "@/components/sections/GardenMapping";
-import { IdentityGrows } from "@/components/sections/IdentityGrows";
-import { LabClearing } from "@/components/sections/LabClearing";
-import { RoadmapPreview } from "@/components/sections/RoadmapPreview";
-import { RootStructure } from "@/components/sections/RootStructure";
-import { Seasons } from "@/components/sections/Seasons";
 
 /**
- * The homepage is one growth narrative, not a stack of feature blocks (§7).
+ * PR1 — the static hero, and nothing else.
  *
- * Read top to bottom it goes: a seed germinates in a hand, knowledge takes
- * root, roots branch into paths, paths are proven in clearings, proof
- * accumulates into an identity, identity is planted in a garden, the garden
- * moves through seasons — and then the screen returns to darkness with one seed
- * and one invitation.
- *
- * Each section is structurally different by design: a spine diagram, a root
- * network plus list, a workspace still, a progression rail, a legend, a
- * timeline. Repeating one layout would flatten the story into a brochure (§20).
+ * The public site's sections (Origin, Learning Method, Growth, Garden,
+ * Roadmap, Community, Final CTA) land in a later PR, one at a time, after this
+ * frame is signed off against the canonical reference (§26).
  */
-export default function HomePage() {
-  return (
-    <>
-      <Hero />
-      <RootStructure />
-      <RoadmapPreview />
-      <LabClearing />
-      <IdentityGrows />
-      <GardenMapping />
-      <Seasons />
-      <FinalCta />
-    </>
-  );
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  // Read on the server so the flag is part of the rendered tree. Setting it
+  // from an inline script before hydration mutates <html> and React reports it
+  // as an attribute mismatch.
+  const params = await searchParams;
+  const visualTest = params.visualTest === "1";
+
+  return <Hero visualTest={visualTest} />;
 }

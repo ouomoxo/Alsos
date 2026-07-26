@@ -226,7 +226,7 @@ const BAYER8 = [
  *
  * @param {number[][]} ramp linear-RGB colours, dark to bright
  */
-export function quantiseToRamp(raster, ramp, { strengthAt } = {}) {
+export function quantiseToRamp(raster, ramp, { strengthAt, cellAt } = {}) {
   const { width, height, data } = raster;
   const lum = ramp.map((c) => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]);
   const last = ramp.length - 1;
@@ -247,8 +247,14 @@ export function quantiseToRamp(raster, ramp, { strengthAt } = {}) {
       const l = 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
       const f = rampIndex(clamp01(l));
 
-      // Bayer threshold at one art pixel per cell — the grid is the art.
-      const threshold = (BAYER8[y & 7][x & 7] + 0.5) / 64;
+      // Cell size varies across the frame. §5.1 keeps the forest cinematic and
+      // reserves the pixel grammar for the tree and the hand, so those regions
+      // dither on a coarse grid and read as discrete dots, while the forest
+      // dithers at one pixel and reads as fine film texture.
+      const cell = cellAt ? cellAt(x, y) : 1;
+      const bx = cell > 1 ? Math.floor(x / cell) & 7 : x & 7;
+      const by = cell > 1 ? Math.floor(y / cell) & 7 : y & 7;
+      const threshold = (BAYER8[by][bx] + 0.5) / 64;
       const strength = strengthAt ? strengthAt(x, y) : 1;
       const index = clamp(
         Math.floor(f + (threshold - 0.5) * strength + 0.5),

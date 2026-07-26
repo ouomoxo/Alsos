@@ -20,9 +20,9 @@ const DEFAULTS = {
   lengthDecay: 0.76,
   widthDecay: 0.68,
   /** Spread half-angle in radians, widening as we climb. */
-  spread: 0.62,
+  spread: 0.4,
   /** Upward bias keeps the canopy from drooping into a bush. */
-  phototropism: 0.14,
+  phototropism: 0.34,
   curve: 0.2,
   /**
    * Apical dominance: the first child continues the parent's line and stays
@@ -30,7 +30,7 @@ const DEFAULTS = {
    * fractal diagram rather than as wood.
    */
   leaderBias: 0.3,
-  leaderLength: 1.05,
+  leaderLength: 1.12,
   /** Fraction of higher-order branches dropped, so the silhouette is uneven. */
   pruneChance: 0.1,
 };
@@ -116,7 +116,7 @@ export function generateTree(options = {}) {
       clusters.push({
         x: cx,
         y: cy,
-        r: length * lerp(1.0, 1.9, rng()),
+        r: length * lerp(0.9, 1.6, rng()),
         density: lerp(0.55, 1, rng()),
         path: cPath,
         branchId,

@@ -23,12 +23,12 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--target-min);
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
   transition: color var(--motion-control) var(--ease-out);
 }
 
 .logo:hover {
-  color: var(--alsos-spore);
+  color: var(--spore-200);
 }
 
 /* --------------------------------------------------------------- desktop -- */
@@ -49,7 +49,7 @@
   align-items: center;
   min-height: var(--target-min);
   padding-inline: var(--space-1);
-  color: var(--alsos-text-secondary);
+  color: var(--text-secondary);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   letter-spacing: 0.04em;
@@ -57,12 +57,12 @@
 }
 
 .navLink:hover {
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
 }
 
 /* Active state is a lit underline plus aria-current — not a colour swap. */
 .navLink[data-active="true"] {
-  color: var(--alsos-spore);
+  color: var(--spore-200);
 }
 
 .navLink[data-active="true"]::after {
@@ -72,7 +72,7 @@
   right: 0;
   bottom: calc(50% - 0.9em);
   height: var(--dot-xs);
-  background: var(--alsos-spore);
+  background: var(--spore-200);
 }
 
 .actions {
@@ -86,9 +86,9 @@
   align-items: center;
   min-height: var(--target-min);
   padding: 0 var(--space-5, 1.25rem);
-  border: var(--border-width) solid var(--alsos-border-default);
+  border: var(--border-width) solid var(--border-default);
   border-radius: var(--radius-xs);
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
   font-family: var(--font-ui);
   font-size: var(--text-sm);
   transition:
@@ -97,8 +97,8 @@
 }
 
 .dashboardLink:hover {
-  border-color: var(--alsos-border-active);
-  color: var(--alsos-spore);
+  border-color: var(--border-active);
+  color: var(--spore-200);
 }
 
 .menuButton {
@@ -108,13 +108,13 @@
   width: var(--target-min);
   height: var(--target-min);
   border: var(--border-width) solid transparent;
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
   background: none;
   cursor: pointer;
 }
 
 .menuButton:hover {
-  color: var(--alsos-spore);
+  color: var(--spore-200);
 }
 
 @media (min-width: 1024px) {
@@ -144,7 +144,7 @@
 .modal {
   position: fixed;
   inset: 0;
-  background: var(--alsos-night);
+  background: var(--forest-900);
 }
 
 .dialog {
@@ -160,14 +160,14 @@
   align-items: center;
   justify-content: space-between;
   height: var(--header-height);
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
 }
 
 .dialogList {
   display: flex;
   flex-direction: column;
   margin-top: var(--space-8);
-  border-top: var(--border-width) solid var(--alsos-border-subtle);
+  border-top: var(--border-width) solid var(--border-subtle);
 }
 
 .dialogLink {
@@ -177,17 +177,17 @@
   gap: var(--space-4);
   min-height: 72px;
   padding-block: var(--space-4);
-  border-bottom: var(--border-width) solid var(--alsos-border-subtle);
-  color: var(--alsos-text-primary);
+  border-bottom: var(--border-width) solid var(--border-subtle);
+  color: var(--text-primary);
   font-size: 1.5rem;
 }
 
 .dialogLink:hover {
-  color: var(--alsos-spore);
+  color: var(--spore-200);
 }
 
 .dialogLinkEn {
-  color: var(--alsos-text-tertiary);
+  color: var(--text-tertiary);
   font-family: var(--font-ui);
   font-size: var(--text-xs);
   letter-spacing: 0.14em;

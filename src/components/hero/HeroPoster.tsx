@@ -1,4 +1,4 @@
-import { compositionById, heroCompositions } from "@/lib/hero/manifest";
+import { compositionById, heroCompositions, srcSet } from "@/lib/hero/manifest";
 import styles from "./HeroPoster.module.css";
 
 /**
@@ -23,8 +23,9 @@ export function HeroPoster() {
           <source
             key={comp.id}
             media={comp.media}
-            type="image/webp"
-            srcSet={comp.poster.webp}
+            type="image/avif"
+            srcSet={srcSet(comp.poster.avif)}
+            sizes="100vw"
             width={comp.width}
             height={comp.height}
           />
@@ -32,7 +33,9 @@ export function HeroPoster() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           className={styles.image}
-          src={fallback.poster.png}
+          src={fallback.poster.webp.at(-1)?.src}
+          srcSet={srcSet(fallback.poster.webp)}
+          sizes="100vw"
           width={fallback.width}
           height={fallback.height}
           alt=""

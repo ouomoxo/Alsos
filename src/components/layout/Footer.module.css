@@ -1,6 +1,6 @@
 .footer {
-  background: var(--alsos-void);
-  border-top: var(--border-width) solid var(--alsos-border-subtle);
+  background: var(--void-950);
+  border-top: var(--border-width) solid var(--border-subtle);
   padding-block: var(--space-16) var(--space-12);
 }
 
@@ -15,13 +15,13 @@
 }
 
 .brand {
-  color: var(--alsos-text-primary);
+  color: var(--text-primary);
 }
 
 .etymology {
   margin-top: var(--space-4);
   max-width: 34ch;
-  color: var(--alsos-text-tertiary);
+  color: var(--text-tertiary);
   font-size: var(--text-sm);
 }
 
@@ -32,7 +32,7 @@
 }
 
 .columnTitle {
-  color: var(--alsos-text-tertiary);
+  color: var(--text-tertiary);
   font-family: var(--font-label);
   font-size: var(--text-2xs);
   letter-spacing: 0.04em;
@@ -48,12 +48,12 @@
   display: inline-flex;
   align-items: center;
   min-height: var(--target-min);
-  color: var(--alsos-text-secondary);
+  color: var(--text-secondary);
   font-size: var(--text-sm);
 }
 
 .link:hover {
-  color: var(--alsos-spore);
+  color: var(--spore-200);
 }
 
 .microcopy {
@@ -61,7 +61,7 @@
   max-width: var(--container-max);
   margin: var(--space-16) auto 0;
   padding-inline: var(--gutter);
-  color: var(--alsos-text-tertiary);
+  color: var(--text-tertiary);
   font-family: var(--font-ui);
   font-size: var(--text-2xs);
   letter-spacing: 0.1em;

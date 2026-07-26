@@ -1,277 +1,217 @@
 /**
- * Hero layout — §3.1 composition and §14 responsive rules.
+ * Hero geometry, measured from the 1536x605 canonical reference (§6).
  *
- * The frame is the 12-column field: copy on 1-4, art breathing through the
- * middle, platform state on 11-12. The art is a background layer, so the grid
- * here only positions text.
+ * Percentages come straight from that table so the layout tracks the artwork's
+ * focal point as the viewport changes, rather than drifting off it. Type sizes
+ * are the reference's absolute pixels — §6 defines per-ratio overrides as a
+ * later step, so PR1 holds the canonical values.
  */
 
 .hero {
   position: relative;
+  min-height: 100svh;
+  overflow: clip;
   isolation: isolate;
-  width: 100%;
-  min-height: 100svh;
-  background: var(--alsos-void);
-  overflow: hidden;
-}
-
-.content {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  width: 100%;
-  max-width: var(--container-max);
-  min-height: 100svh;
-  margin-inline: auto;
-  padding: calc(var(--header-height) + var(--space-8)) var(--gutter) var(--space-12);
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  grid-template-rows: 1fr auto;
-  align-content: end;
-  gap: var(--space-8) var(--space-6);
+  background: var(--void-950);
+  color: var(--text-primary);
 }
 
 /* ------------------------------------------------------------------ copy -- */
 
 .copy {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  /* The copy sits on art that was composed dark behind it — no scrim needed. */
+  position: absolute;
+  left: 5.2083%;
+  top: 27.2727%;
+  width: 300px;
+  z-index: 5;
 }
 
-.headline {
+.title {
   display: flex;
   flex-direction: column;
+  margin: 0;
   font-family: var(--font-display);
-  font-size: var(--text-hero);
-  line-height: 0.92;
-  letter-spacing: -0.01em;
-  /* Bright, but never brighter than the tree: the eye must land on the art
-     first (§3.1). */
-  color: var(--alsos-text-primary);
+  font-size: var(--hero-title-size);
+  font-weight: 400;
+  line-height: var(--hero-title-line-height);
+  letter-spacing: var(--hero-title-tracking);
+  text-transform: uppercase;
+  color: var(--text-primary);
 }
 
-.headlineLine {
-  display: block;
-  /* Settles in with a 12px rise at 200ms (§10.5). Content is readable the
-     whole time — this animates position, never visibility of information. */
-  animation: headline-rise var(--motion-reveal) var(--ease-out) backwards;
+.body {
+  /* 345px - 165px - three lines of 48px*1.16 = 178px of headline. */
+  margin: 12px 0 0;
+  font-family: var(--font-body);
+  font-size: var(--hero-body-size);
+  line-height: var(--hero-body-line-height);
+  color: var(--text-secondary);
 }
 
-.headlineLine:nth-child(1) {
-  animation-delay: 200ms;
-}
-.headlineLine:nth-child(2) {
-  animation-delay: 280ms;
-}
-.headlineLine:nth-child(3) {
-  animation-delay: 360ms;
-}
-
-@keyframes headline-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.description {
-  margin-top: var(--space-6);
-  max-width: 42ch;
-  color: var(--alsos-text-secondary);
-  font-size: var(--text-body-lg);
-  line-height: 1.65;
-}
-
-/* ------------------------------------------------------------------- CTA -- */
-
-.cta {
+.primaryAction {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-3);
-  margin-top: var(--space-8);
-  min-height: var(--control-height);
-  padding: 0 var(--space-6);
-  border: var(--border-width) solid var(--alsos-border-active);
-  border-radius: var(--radius-xs);
-  background: transparent;
-  color: var(--alsos-spore);
+  justify-content: center;
+  gap: 8px;
+  width: 154px;
+  height: 42px;
+  margin-top: 22px;
+  border: 1px solid var(--border-active);
+  border-radius: 3px;
+  color: var(--spore-200);
   font-family: var(--font-label);
-  font-size: var(--text-sm);
+  font-size: var(--button-size);
   letter-spacing: 0.02em;
+  text-decoration: none;
   transition:
     background-color var(--motion-control) var(--ease-out),
     color var(--motion-control) var(--ease-out),
     box-shadow var(--motion-control) var(--ease-out);
 }
 
-.cta:hover {
-  background: var(--alsos-spore);
-  color: var(--alsos-text-inverse);
-  box-shadow: var(--alsos-glow-active);
+.primaryAction:hover {
+  background: var(--spore-200);
+  color: var(--void-950);
+  box-shadow: var(--glow-active);
 }
 
-/* ------------------------------------------------------------------ rail -- */
+/* ------------------------------------------------------------ product rail */
 
-.rail {
-  display: none;
+.productRail {
+  position: absolute;
+  right: 2.54%;
+  top: 33.55%;
+  z-index: 5;
 }
 
 .railList {
   display: flex;
   flex-direction: column;
-  gap: var(--space-8);
+  gap: 34px;
+  text-align: right;
 }
 
 .railItem {
   display: flex;
   flex-direction: column;
-  gap: var(--space-2);
+  gap: 4px;
   align-items: flex-end;
-  text-align: right;
+}
+
+.railIndex {
+  font-family: var(--font-ui);
+  font-size: var(--metric-value-size);
+  line-height: 1;
+  color: var(--spore-300);
 }
 
 .railLabel {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--alsos-text-tertiary);
-  font-family: var(--font-label);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.04em;
-}
-
-.railValue {
-  margin: 0;
-  color: var(--alsos-lichen);
-  font-family: var(--font-display);
-  font-size: 1.75rem;
-  line-height: 1;
+  font-family: var(--font-ui);
+  font-size: var(--metric-label-size);
+  letter-spacing: 0.1em;
+  color: var(--text-tertiary);
+  white-space: nowrap;
 }
 
 /* ------------------------------------------------------------- microcopy -- */
 
-.microcopy {
-  grid-column: 1 / -1;
-  grid-row: 3;
+.microcopyLeft,
+.microcopyRight {
+  position: absolute;
+  top: 87.44%;
+  z-index: 5;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--nav-size);
+  line-height: 1.5;
+  letter-spacing: var(--nav-tracking);
+  color: var(--text-tertiary);
+}
+
+.microcopyLeft {
+  left: 1.953%;
   display: flex;
   flex-direction: column;
-  gap: var(--space-1);
-  margin-top: var(--space-12);
-  color: var(--alsos-text-tertiary);
-  font-family: var(--font-ui);
-  font-size: var(--text-2xs);
-  letter-spacing: 0.06em;
 }
 
 .microcopyKo {
-  color: var(--alsos-text-tertiary);
   font-family: var(--font-body);
   letter-spacing: 0;
 }
 
-/* ================================================================ 768px == */
+.microcopyRight {
+  right: 1.823%;
+  text-align: right;
+}
 
-@media (min-width: 768px) {
-  .content {
-    grid-template-columns: repeat(8, minmax(0, 1fr));
-  }
-
-  /* Tablet: tree moves right, copy sits bottom-left (§14). */
+/* Below the canonical desktop frame the fixed pixel type stops fitting the
+   300px column; PR3 defines the tablet and mobile art and layout. */
+@media (max-width: 1023px) {
   .copy {
-    grid-column: 1 / 6;
+    left: 6%;
+    top: auto;
+    bottom: 16%;
+    width: min(320px, 84vw);
   }
 
-  .microcopy {
-    flex-direction: row;
-    gap: var(--space-6);
-  }
-}
-
-/* =============================================================== 1024px == */
-
-@media (min-width: 1024px) {
-  .content {
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    grid-template-rows: 1fr auto;
-    align-content: center;
-    padding-block: calc(var(--header-height) + var(--space-12)) var(--space-12);
+  .title {
+    font-size: 40px;
   }
 
-  .copy {
-    grid-column: 1 / 5;
-    grid-row: 1;
-    justify-content: center;
+  .productRail {
+    display: none;
   }
 
-  .headline {
-    font-size: clamp(4rem, 7vw, 6.5rem);
+  .microcopyRight {
+    display: none;
   }
 
-  .rail {
-    display: flex;
-    grid-column: 11 / -1;
-    grid-row: 1;
-    align-items: center;
-    justify-content: flex-end;
-  }
-
-  .microcopy {
-    grid-row: 2;
-    align-items: baseline;
+  .microcopyLeft {
+    top: auto;
+    bottom: 6%;
   }
 }
 
-/* =============================================================== 1440px == */
+/* ------------------------------------------------------------------ tree -- */
 
-@media (min-width: 1440px) {
-  .hero {
-    min-height: max(720px, 100svh);
+/**
+ * The growth sprite sits between the poster and the copy.
+ *
+ * `pixelated` is correct here and only here: this layer genuinely is a
+ * low-resolution pixel image (one cell per art pixel), unlike the cinematic
+ * forest plate underneath it (§5.4).
+ */
+.tree {
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  animation: tree-growth 1750ms 650ms both;
+}
+
+@keyframes tree-growth {
+  from {
+    background-position-y: 0%;
   }
-
-  .content {
-    min-height: max(720px, 100svh);
-  }
-
-  .headline {
-    /* §14 caps the headline at 144px on the widest breakpoint. */
-    font-size: clamp(6rem, 8.5vw, 9rem);
-  }
-
-  .description {
-    font-size: 1.25rem;
+  to {
+    background-position-y: 100%;
   }
 }
 
-/* ============================================================== ≤ 767px == */
-
-@media (max-width: 767px) {
-  .hero,
-  .content {
-    min-height: 100svh;
-  }
-
-  .headline {
-    font-size: clamp(3rem, 13vw, 4rem);
-  }
-
-  .description {
-    font-size: var(--text-base);
-  }
-
-  .microcopy {
-    margin-top: var(--space-8);
-  }
-}
-
+/* Reduced motion gets the finished tree, immediately and permanently. */
 @media (prefers-reduced-motion: reduce) {
-  .headlineLine {
+  .tree {
     animation: none;
+    background-position-y: 100%;
   }
+}
+
+/* Visual-regression mode pins the final frame so shots are comparable (§25).
+   The flag renders on the hero itself, and the dev overlay's M key toggles the
+   same attribute on :root — both selectors are live. */
+.hero[data-visual-test="1"] .tree,
+:global(:root[data-visual-test]) .tree {
+  animation: none;
+  background-position-y: 100%;
 }

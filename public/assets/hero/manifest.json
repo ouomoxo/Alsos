@@ -3,27 +3,94 @@
   "seed": "alsos-hero-v1",
   "generatedBy": "scripts/generate-hero-assets.mjs",
   "skeleton": "/assets/hero/tree-skeleton.json",
-  "og": "/assets/hero/og-image-1200x630.png",
+  "og": "/assets/hero/og-image-1200x630.jpg",
   "compositions": [
     {
       "id": "desktop-ultrawide",
       "media": "(min-width: 1600px)",
-      "width": 960,
-      "height": 420,
+      "width": 3200,
+      "height": 1260,
       "poster": {
-        "png": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.png",
-        "webp": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.webp"
+        "avif": [
+          {
+            "w": 1280,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1280.avif"
+          },
+          {
+            "w": 1920,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1920.avif"
+          },
+          {
+            "w": 2560,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-2560.avif"
+          },
+          {
+            "w": 3200,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 1280,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1280.webp"
+          },
+          {
+            "w": 1920,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-1920.webp"
+          },
+          {
+            "w": 2560,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base-2560.webp"
+          },
+          {
+            "w": 3200,
+            "src": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-base.webp"
+          }
+        ]
       },
-      "lqip": "data:image/webp;base64,UklGRjwAAABXRUJQVlA4IDAAAADQAQCdASoQAAcAAsBMJZQAAxO54gKl0AD++mSp3mij7b+wc9X/ZDVq9djoK7mhgAA=",
+      "cleanPlate": "/assets/hero/desktop-ultrawide/hero-desktop-ultrawide-clean-plate.avif",
+      "growth": {
+        "src": "/assets/hero/desktop-ultrawide/tree-growth-desktop-ultrawide.png",
+        "frames": 30,
+        "frameWidth": 146,
+        "frameHeight": 219,
+        "rect": {
+          "x": 0.46783198953189603,
+          "y": 0.12308382280037904,
+          "width": 0.18249541891947252,
+          "height": 0.6925295023141297
+        }
+      },
+      "lqip": "data:image/webp;base64,UklGRjgAAABXRUJQVlA4ICwAAACwAQCdASoQAAYAAsBMJZQAAqH1genAAP76ZXg5k+iXOG9Yh5JchPDdISkAAA==",
       "palm": {
-        "x": 0.575,
-        "y": 0.735
+        "x": 0.5566,
+        "y": 0.72
+      },
+      "referenceViewport": {
+        "width": 1536,
+        "height": 605
+      },
+      "focalPoint": {
+        "x": 0.5566,
+        "y": 0.4463
+      },
+      "copySafeArea": {
+        "x": 0.0521,
+        "y": 0.2727,
+        "width": 0.235,
+        "height": 0.47
+      },
+      "metricsSafeArea": {
+        "x": 0.918,
+        "y": 0.3355,
+        "width": 0.065,
+        "height": 0.38
       },
       "light": {
-        "x": 0.552,
-        "y": -0.06
+        "x": 0.5566,
+        "y": -0.05
       },
-      "treeHeight": 0.62,
+      "treeHeight": 0.57,
       "safe": [
         {
           "edge": "left",
@@ -45,22 +112,89 @@
     {
       "id": "desktop-standard",
       "media": "(min-width: 768px)",
-      "width": 800,
-      "height": 500,
+      "width": 2560,
+      "height": 1440,
       "poster": {
-        "png": "/assets/hero/desktop-standard/hero-desktop-standard-base.png",
-        "webp": "/assets/hero/desktop-standard/hero-desktop-standard-base.webp"
+        "avif": [
+          {
+            "w": 1024,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1024.avif"
+          },
+          {
+            "w": 1536,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1536.avif"
+          },
+          {
+            "w": 2048,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-2048.avif"
+          },
+          {
+            "w": 2560,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 1024,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1024.webp"
+          },
+          {
+            "w": 1536,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-1536.webp"
+          },
+          {
+            "w": 2048,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base-2048.webp"
+          },
+          {
+            "w": 2560,
+            "src": "/assets/hero/desktop-standard/hero-desktop-standard-base.webp"
+          }
+        ]
       },
-      "lqip": "data:image/webp;base64,UklGRkIAAABXRUJQVlA4IDYAAADQAQCdASoQAAoAAsBMJYwAAiDsPmlyAAD++mVxiI9IwMAnnFegIfr3zishCEwTpsivb30BwAA=",
+      "cleanPlate": "/assets/hero/desktop-standard/hero-desktop-standard-clean-plate.avif",
+      "growth": {
+        "src": "/assets/hero/desktop-standard/tree-growth-desktop-standard.png",
+        "frames": 30,
+        "frameWidth": 147,
+        "frameHeight": 219,
+        "rect": {
+          "x": 0.4767618916439801,
+          "y": 0.23138931824594655,
+          "width": 0.22869100115222113,
+          "height": 0.6074820195737979
+        }
+      },
+      "lqip": "data:image/webp;base64,UklGRjoAAABXRUJQVlA4IC4AAACwAQCdASoQAAkAAsBMJZQAAh67s4tgAP76ZXVN+YZbG+fekFFGzHMj3O3+AAAA",
       "palm": {
         "x": 0.588,
         "y": 0.755
+      },
+      "referenceViewport": {
+        "width": 1536,
+        "height": 605
+      },
+      "focalPoint": {
+        "x": 0.5566,
+        "y": 0.4463
+      },
+      "copySafeArea": {
+        "x": 0.0521,
+        "y": 0.2727,
+        "width": 0.235,
+        "height": 0.47
+      },
+      "metricsSafeArea": {
+        "x": 0.918,
+        "y": 0.3355,
+        "width": 0.065,
+        "height": 0.38
       },
       "light": {
         "x": 0.565,
         "y": -0.05
       },
-      "treeHeight": 0.56,
+      "treeHeight": 0.5,
       "safe": [
         {
           "edge": "left",
@@ -82,22 +216,89 @@
     {
       "id": "mobile-portrait",
       "media": "(max-width: 767px)",
-      "width": 360,
-      "height": 450,
+      "width": 1440,
+      "height": 1920,
       "poster": {
-        "png": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.png",
-        "webp": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.webp"
+        "avif": [
+          {
+            "w": 576,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-576.avif"
+          },
+          {
+            "w": 864,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-864.avif"
+          },
+          {
+            "w": 1152,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-1152.avif"
+          },
+          {
+            "w": 1440,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.avif"
+          }
+        ],
+        "webp": [
+          {
+            "w": 576,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-576.webp"
+          },
+          {
+            "w": 864,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-864.webp"
+          },
+          {
+            "w": 1152,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base-1152.webp"
+          },
+          {
+            "w": 1440,
+            "src": "/assets/hero/mobile-portrait/hero-mobile-portrait-base.webp"
+          }
+        ]
       },
-      "lqip": "data:image/webp;base64,UklGRlgAAABXRUJQVlA4IEwAAABwAwCdASoQABQAPtFUo0uoJKMhsAgBABoJZQC7ABi9ILfw4AAA/vQnS2u1Q3lyZGpr20K4Ucy8Hyh9WSkRQQWdfvrmuAQ83RoplAAA",
+      "cleanPlate": "/assets/hero/mobile-portrait/hero-mobile-portrait-clean-plate.avif",
+      "growth": {
+        "src": "/assets/hero/mobile-portrait/tree-growth-mobile-portrait.png",
+        "frames": 30,
+        "frameWidth": 157,
+        "frameHeight": 234,
+        "rect": {
+          "x": 0.28905958711747326,
+          "y": 0.11611145459675724,
+          "width": 0.4336658984812492,
+          "height": 0.4859856156590385
+        }
+      },
+      "lqip": "data:image/webp;base64,UklGRlIAAABXRUJQVlA4IEYAAADQAwCdASoQABUAPtFWo0uoJKMhsAgBABoJZQC2yBjs+Y4iYFvpqQAA/vQvnbt2SE7Wi4XuatBLj0XS5SL15Xw6bVseAAAA",
       "palm": {
         "x": 0.5,
         "y": 0.535
+      },
+      "referenceViewport": {
+        "width": 1536,
+        "height": 605
+      },
+      "focalPoint": {
+        "x": 0.5566,
+        "y": 0.4463
+      },
+      "copySafeArea": {
+        "x": 0.0521,
+        "y": 0.2727,
+        "width": 0.235,
+        "height": 0.47
+      },
+      "metricsSafeArea": {
+        "x": 0.918,
+        "y": 0.3355,
+        "width": 0.065,
+        "height": 0.38
       },
       "light": {
         "x": 0.5,
         "y": -0.03
       },
-      "treeHeight": 0.42,
+      "treeHeight": 0.4,
       "safe": [
         {
           "edge": "bottom",

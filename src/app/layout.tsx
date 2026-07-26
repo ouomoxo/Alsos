@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { headers } from "next/headers";
 
+import { ReferenceOverlay } from "@/components/dev/ReferenceOverlay.client";
 import { heroManifest } from "@/lib/hero/manifest";
 
 import "@/styles/fonts.css";
@@ -35,32 +35,16 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko">
-      <head>
-        {/*
-          The hero skeleton is fetched by the WebGL layer moments after load.
-          Preloading it costs nothing on the critical path and removes a
-          round-trip from the growth animation's start.
-        */}
-        <link rel="preload" href={heroManifest.skeleton} as="fetch" crossOrigin="anonymous" />
-        <script
-          nonce={nonce}
-          // Applies the visual-test flag before first paint so screenshots are
-          // not taken mid-transition (§19). It reads only its own URL.
-          dangerouslySetInnerHTML={{
-            __html: `try{var p=new URLSearchParams(location.search);if(p.get("visualTest")==="1"){document.documentElement.setAttribute("data-visual-test","1")}}catch(e){}`,
-          }}
-        />
-      </head>
       <body>
         <a className="skip-link" href="#main">
           본문으로 건너뛰기
         </a>
         {children}
+        {/* Layout-matching tool, development builds only (§24). */}
+        {process.env.NODE_ENV !== "production" && <ReferenceOverlay />}
       </body>
     </html>
   );

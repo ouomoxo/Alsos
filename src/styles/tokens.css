@@ -8,40 +8,40 @@
  */
 
 :root {
-  /* Core backgrounds */
-  --alsos-void: #070908;
-  --alsos-night: #0b0f0c;
-  --alsos-canopy: #111811;
-  --alsos-surface: #172016;
-  --alsos-surface-raised: #1d271a;
+  /* ---------------------------------------------------------------- §20 --
+     Sampled from the canonical reference. Re-sample against the final art
+     plate when it lands; these are the approximation the build starts from. */
 
-  /* Forest spectrum */
-  --alsos-moss-deep: #26301f;
-  --alsos-moss: #68743c;
-  --alsos-lichen: #aeb760;
-  --alsos-spore: #d9dd7a;
-  --alsos-spore-bright: #e5e98d;
+  --void-950: #0a0b0c;
+  --forest-900: #0f1210;
+  --forest-850: #151914;
+  --forest-800: #1e2318;
+  --forest-750: #292f1e;
+  --moss-700: #353c23;
+  --moss-650: #424928;
+  --moss-600: #52592f;
+  --moss-550: #636a3c;
+  --lichen-500: #7b813f;
+  --spore-400: #9ca156;
+  --spore-300: #c3c572;
+  --spore-200: #e9e98c;
 
-  /* Text */
-  --alsos-text-primary: #f1f2ea;
-  --alsos-text-secondary: #a8ad9d;
-  --alsos-text-tertiary: #747b6e;
-  --alsos-text-inverse: #0b0f0c;
+  --text-primary: #f7f7f4;
+  --text-secondary: #abada0;
+  --text-tertiary: #808368;
 
-  /* Functional */
-  --alsos-success: #b8c66d;
-  --alsos-warning: #d1a75a;
-  --alsos-danger: #c56f64;
-  --alsos-info: #86a7a0;
+  --border-subtle: rgba(195, 197, 114, 0.14);
+  --border-default: rgba(195, 197, 114, 0.28);
+  --border-active: rgba(233, 233, 140, 0.72);
 
-  /* Borders */
-  --alsos-border-subtle: rgba(217, 221, 122, 0.14);
-  --alsos-border-default: rgba(217, 221, 122, 0.28);
-  --alsos-border-active: rgba(217, 221, 122, 0.72);
+  --glow-subtle: 0 0 20px rgba(233, 233, 140, 0.1);
+  --glow-active: 0 0 32px rgba(233, 233, 140, 0.2);
 
-  /* Glow */
-  --alsos-glow-soft: 0 0 24px rgba(217, 221, 122, 0.12);
-  --alsos-glow-active: 0 0 36px rgba(217, 221, 122, 0.24);
+  /* Functional state. Never the only carrier of meaning (§19). */
+  --state-success: #9ca156;
+  --state-warning: #d1a75a;
+  --state-danger: #c56f64;
+  --state-info: #86a7a0;
 
   /* Typography */
   --font-display: "ALSOS Grid", "Silkscreen", "Departure Mono", monospace;
@@ -52,6 +52,18 @@
      so Korean set in it falls back mid-string and the wide Latin tracking
      pulls syllable blocks apart. Latin/numeric labels keep --font-ui. */
   --font-label: var(--font-body);
+
+  /* Hero type, measured on the 1536x605 canonical frame (§6). */
+  --hero-title-size: 48px;
+  --hero-title-line-height: 1.16;
+  --hero-title-tracking: 0.09em;
+  --hero-body-size: 14px;
+  --hero-body-line-height: 1.55;
+  --nav-size: 10px;
+  --nav-tracking: 0.04em;
+  --button-size: 12px;
+  --metric-value-size: 15px;
+  --metric-label-size: 10px;
 
   /* Type scale */
   --text-2xs: 0.6875rem;

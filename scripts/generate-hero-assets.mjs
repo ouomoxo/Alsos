@@ -46,6 +46,19 @@ const OUT = path.join(ROOT, "public", "assets", "hero");
 const ART_OUT = path.join(ROOT, "art", "hero");
 const SEED = "alsos-hero-v1";
 
+/**
+ * The art pixel, in full-resolution pixels.
+ *
+ * §5.1 splits the frame in two: the forest stays cinematic and monumental,
+ * while the tree, the hand and the spores carry the pixel grammar. So the
+ * render is full resolution throughout, and only those elements are drawn and
+ * dithered on this coarse grid.
+ */
+const CELL = 4;
+
+/** Snap a coordinate to the art grid. */
+const snap = (v) => Math.round(v / CELL) * CELL;
+
 /* ------------------------------------------------------------- palette --- */
 
 const hexToLinear = (hex) => {
@@ -89,13 +102,13 @@ const RAMP = [
 const COMPOSITIONS = [
   {
     id: "desktop-ultrawide",
-    width: 960,
-    height: 420,
+    width: 3200,
+    height: 1260,
     media: "(min-width: 1600px)",
-    light: { x: 0.552, y: -0.06 },
-    palm: { x: 0.575, y: 0.735 },
-    treeHeight: 0.62,
-    handScale: 0.3,
+    light: { x: 0.5566, y: -0.05 },
+    palm: { x: 0.5566, y: 0.72 },
+    treeHeight: 0.57,
+    handScale: 0.2,
     handRotation: -0.06,
     trunks: 150,
     atmosphere: 1,
@@ -108,13 +121,13 @@ const COMPOSITIONS = [
   },
   {
     id: "desktop-standard",
-    width: 800,
-    height: 500,
+    width: 2560,
+    height: 1440,
     media: "(min-width: 768px)",
     light: { x: 0.565, y: -0.05 },
     palm: { x: 0.588, y: 0.755 },
-    treeHeight: 0.56,
-    handScale: 0.3,
+    treeHeight: 0.5,
+    handScale: 0.19,
     handRotation: -0.05,
     trunks: 132,
     atmosphere: 0.95,
@@ -126,14 +139,14 @@ const COMPOSITIONS = [
   },
   {
     id: "mobile-portrait",
-    width: 360,
-    height: 450,
+    width: 1440,
+    height: 1920,
     media: "(max-width: 767px)",
     light: { x: 0.5, y: -0.03 },
     // Tree sits in the upper third; the copy owns the bottom of the frame.
     palm: { x: 0.5, y: 0.535 },
-    treeHeight: 0.42,
-    handScale: 0.24,
+    treeHeight: 0.4,
+    handScale: 0.17,
     handRotation: 0,
     trunks: 95,
     atmosphere: 0.72,
@@ -258,7 +271,7 @@ function drawForest(raster, comp, rng, fbm) {
           opacity,
         ];
       },
-      { depth: layerDepth, mask: layerMask },
+      { depth: layerDepth, mask: layerMask, feather: 1 },
     );
 
     const px = tip.x;
@@ -293,7 +306,7 @@ function drawForest(raster, comp, rng, fbm) {
               opacity * 0.9,
             ];
           },
-          { depth: layerDepth, mask: layerMask, feather: 0.9 },
+          { depth: layerDepth, mask: layerMask, feather: 1 },
         );
       }
     }
@@ -303,7 +316,7 @@ function drawForest(raster, comp, rng, fbm) {
 /** Canopy foliage: fbm-driven leaf mass, lit only where it faces the source. */
 function drawCanopy(raster, comp, rng, fbm) {
   const { width: W, height: H } = comp;
-  const count = Math.round((W * H) / 26);
+  const count = Math.round((W * H) / 900);
   for (let i = 0; i < count; i++) {
     const u = rng();
     const v = Math.pow(rng(), 1.6) * 0.68;
@@ -318,7 +331,7 @@ function drawCanopy(raster, comp, rng, fbm) {
     const lit = Math.pow(clamp01(1 - distLight * 1.15), 2.4);
     if (lit < 0.02 && density < 0.6) continue;
 
-    const size = rng() < 0.25 ? 2 : 1;
+    const size = rng() < 0.3 ? CELL * 2 : CELL;
     const glow = lit * lerp(0.35, 1, density);
     const c = lit > 0.35 ? PALETTE.lichen : PALETTE.mossDeep;
     splat(
@@ -382,7 +395,7 @@ function drawFloor(raster, comp, rng) {
     ];
   });
 
-  const motes = Math.round((W * H) / 900);
+  const motes = Math.round((W * H) / 26000);
   for (let i = 0; i < motes; i++) {
     const u = rng();
     const v = lerp(0.62, 1.0, Math.pow(rng(), 0.7));
@@ -391,7 +404,7 @@ function drawFloor(raster, comp, rng) {
     const towardLight = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 1.8), 2);
     const a = towardLight * lerp(0.05, 0.55, rng()) * (1 - Math.pow(v, 3));
     if (a <= 0.01) continue;
-    splat(raster, x, y, 1, PALETTE.lichen[0], PALETTE.lichen[1], PALETTE.lichen[2], a, "spore");
+    dot(raster, snap(x), snap(y), CELL, PALETTE.lichen[0], PALETTE.lichen[1], PALETTE.lichen[2], a, "spore");
   }
 }
 
@@ -454,13 +467,13 @@ function drawTree(raster, comp, tree, rng, samples) {
     const c = birth < 0.4 ? PALETTE.sporeBright : PALETTE.spore;
     // Dot grammar: mostly 1-2px spores, occasional 4px node at a junction.
     const isNode = core > 0.62 && rng() < 0.16;
-    dot(raster, p.x, p.y, isNode ? 2 : 1, c[0], c[1], c[2], brightness * 0.5, "tree");
+    dot(raster, snap(p.x), snap(p.y), isNode ? CELL * 2 : CELL, c[0], c[1], c[2], brightness * 0.34, "tree");
   }
 
   // Foliage clusters — leaves and the spores drifting off them. The canopy
   // carries most of the tree's particle budget: branches are the drawing, but
   // the crown is what makes it read as alive rather than as a bare winter twig.
-  const foliageBudget = Math.round(samples * 3.2);
+  const foliageBudget = Math.round(samples * 2.0);
   const densityTotal = tree.clusters.reduce((a, c) => a + c.density, 0) || 1;
   for (const cl of tree.clusters) {
     const n = Math.round((foliageBudget * cl.density) / densityTotal);
@@ -472,7 +485,7 @@ function drawTree(raster, comp, tree, rng, samples) {
       const p = toPx(cl.x + Math.cos(ang) * rad, cl.y + Math.sin(ang) * rad * 0.8);
       const falloff = clamp01(1 - rad / (cl.r * 1.35));
       const a = Math.pow(falloff, 1.1) * lerp(0.2, 0.9, rng()) * cl.density;
-      dot(raster, p.x, p.y, 1, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.4, "tree");
+      dot(raster, snap(p.x), snap(p.y), CELL, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.26, "tree");
     }
   }
 
@@ -491,24 +504,175 @@ function drawTree(raster, comp, tree, rng, samples) {
 /** Ambient spores drifting in the upper frame, as in the reference. */
 function drawAmbientSpores(raster, comp, rng) {
   const { width: W, height: H } = comp;
-  const clusters = 5;
+  const clusters = 3;
   for (let c = 0; c < clusters; c++) {
     const cx = lerp(0.12, 0.92, rng()) * W;
     const cy = lerp(0.02, 0.42, rng()) * H;
-    const n = 40 + Math.floor(rng() * 90);
+    const n = 18 + Math.floor(rng() * 34);
     const spread = lerp(0.02, 0.06, rng()) * W;
     for (let i = 0; i < n; i++) {
       const x = cx + gaussian(rng, 0, spread);
       const y = cy + gaussian(rng, 0, spread * 0.8);
       const a = lerp(0.08, 0.6, Math.pow(rng(), 1.8));
-      splat(raster, x, y, 1, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.5, "spore");
+      dot(raster, snap(x), snap(y), CELL, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a * 0.5, "spore");
     }
   }
 }
 
+/* --------------------------------------------------------- growth sprite --- */
+
+/** Frames in the growth sequence. */
+const GROWTH_FRAMES = 30;
+
+/**
+ * Render the tree's growth as a sprite sheet.
+ *
+ * No 3D engine: the growth order already lives in the skeleton as each
+ * particle's distance along the wood, so the whole animation can be drawn
+ * offline as frames and played back with a CSS steps() timing function. That
+ * is deterministic, needs no runtime shader, degrades to "show the last frame"
+ * under reduced motion, and costs one image request.
+ *
+ * Frames are drawn at 1/CELL of the poster resolution because the tree *is*
+ * pixel art at that grid — upscaling with nearest-neighbour is lossless here
+ * and keeps the sheet small.
+ */
+function renderGrowthSprite(comp, tree, seed) {
+  const { width: W, height: H } = comp;
+  const scale = (comp.treeHeight * H) / tree.bounds.maxY;
+  const palmX = comp.palm.x * W;
+  const palmY = comp.palm.y * H;
+
+  // Bounding box of the tree in poster pixels, with room for foliage spread.
+  const margin = scale * 0.12;
+  const left = palmX + tree.bounds.minX * scale - margin;
+  const right = palmX + tree.bounds.maxX * scale + margin;
+  const top = palmY - tree.bounds.maxY * scale - margin;
+  const bottom = palmY - tree.bounds.minY * scale + margin;
+
+  const fw = Math.ceil((right - left) / CELL);
+  const fh = Math.ceil((bottom - top) / CELL);
+  const sheet = Buffer.alloc(fw * fh * GROWTH_FRAMES * 4);
+
+  // Sample once, replay the same particles at every growth threshold, so a
+  // particle never moves between frames — it only appears.
+  const particles = sampleTreeParticles(tree, makeRng(`${seed}:sprite`), Math.round(fw * fh * 1.6));
+
+  for (let f = 0; f < GROWTH_FRAMES; f++) {
+    // Ease so the growth front slows as it reaches the tips.
+    const t = f / (GROWTH_FRAMES - 1);
+    const growth = t * t * (3 - 2 * t);
+    const base = f * fw * fh * 4;
+
+    for (const p of particles) {
+      if (p.birth > growth) continue;
+      // Particles brighten for a few frames after they appear, then settle.
+      const age = Math.min(1, (growth - p.birth) * 6);
+      const alpha = p.alpha * (0.45 + 0.55 * age);
+      const px = Math.floor((palmX + p.x * scale - left) / CELL);
+      const py = Math.floor((palmY - p.y * scale - top) / CELL);
+      const size = p.big ? 2 : 1;
+      for (let dy = 0; dy < size; dy++) {
+        for (let dx = 0; dx < size; dx++) {
+          const ix = px + dx;
+          const iy = py + dy;
+          if (ix < 0 || iy < 0 || ix >= fw || iy >= fh) continue;
+          const o = base + (iy * fw + ix) * 4;
+          const c = p.colour;
+          // Additive accumulation, then clamp — dense wood saturates to light.
+          sheet[o] = Math.min(255, sheet[o] + c[0] * alpha);
+          sheet[o + 1] = Math.min(255, sheet[o + 1] + c[1] * alpha);
+          sheet[o + 2] = Math.min(255, sheet[o + 2] + c[2] * alpha);
+          sheet[o + 3] = Math.min(255, sheet[o + 3] + 255 * alpha);
+        }
+      }
+    }
+  }
+
+  return {
+    buffer: sheet,
+    frameWidth: fw,
+    frameHeight: fh,
+    frames: GROWTH_FRAMES,
+    /** Placement in normalised poster coordinates. */
+    rect: { x: left / W, y: top / H, width: (right - left) / W, height: (bottom - top) / H },
+  };
+}
+
+/** Shared particle sampling, so poster and sprite agree exactly. */
+function sampleTreeParticles(tree, rng, count) {
+  const weights = tree.segments.map((s) => {
+    const len = Math.hypot(s.x1 - s.x0, s.y1 - s.y0);
+    return len * Math.pow((s.w0 + s.w1) * 0.5, 0.55);
+  });
+  const total = weights.reduce((a, b) => a + b, 0);
+  const cdf = [];
+  let acc = 0;
+  for (const w of weights) {
+    acc += w / total;
+    cdf.push(acc);
+  }
+  const pick = (r) => {
+    let lo = 0;
+    let hi = cdf.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cdf[mid] < r) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  };
+
+  const toByte = (c) => c.map((v) => Math.round(Math.pow(clamp01(v), 1 / 2.2) * 255));
+  const bright = toByte(PALETTE.sporeBright);
+  const spore = toByte(PALETTE.spore);
+
+  const out = [];
+  const wood = Math.round(count * 0.42);
+
+  for (let i = 0; i < wood; i++) {
+    const seg = tree.segments[pick(rng())];
+    const t = rng();
+    const birth = lerp(seg.p0, seg.p1, t);
+    const w = lerp(seg.w0, seg.w1, t);
+    const spread = lerp(0.55, 2.2, Math.pow(birth, 1.5));
+    const off = (rng() + rng() + rng() - 1.5) * spread;
+    const core = clamp01(1 - Math.abs(off) / 1.4);
+    out.push({
+      x: lerp(seg.x0, seg.x1, t) + off * w,
+      y: lerp(seg.y0, seg.y1, t) + gaussian(rng, 0, w * 0.4 * spread),
+      birth,
+      alpha: lerp(0.1, 0.5, core * core) * lerp(1, 0.5, birth),
+      big: core > 0.62 && rng() < 0.16,
+      colour: birth < 0.4 ? bright : spore,
+    });
+  }
+
+  const densityTotal = tree.clusters.reduce((a, c) => a + c.density, 0) || 1;
+  for (const cl of tree.clusters) {
+    const n = Math.round(((count - wood) * cl.density) / densityTotal);
+    for (let i = 0; i < n; i++) {
+      const ang = rng() * Math.PI * 2;
+      const rad = Math.pow(rng(), 0.42) * cl.r * lerp(0.85, 1.35, rng());
+      const falloff = clamp01(1 - rad / (cl.r * 1.35));
+      out.push({
+        x: cl.x + Math.cos(ang) * rad,
+        y: cl.y + Math.sin(ang) * rad * 0.8,
+        // Leaves open slightly after the branch that carries them.
+        birth: clamp01(cl.path + rng() * 0.05),
+        alpha: Math.pow(falloff, 1.1) * lerp(0.08, 0.3, rng()) * cl.density,
+        big: false,
+        colour: spore,
+      });
+    }
+  }
+
+  return out;
+}
+
 /* ----------------------------------------------------------------- post --- */
 
-function postProcess(raster, comp) {
+function postProcess(raster, comp, coarse) {
   const { width: W, height: H } = comp;
 
   // Vignette + text safe-area gradient, both multiplicative on the artwork.
@@ -527,7 +691,30 @@ function postProcess(raster, comp) {
     // Pull the dither back a little over the copy columns so the pattern does
     // not fight the headline (§13.3), without flattening it into a black plate.
     strengthAt: (x, y) => 1 - safeMultiplier(comp, x, y) * 0.35,
+    // Coarse cells wherever the tree, hand or spores are; fine everywhere else.
+    cellAt: (x, y) => (coarse[y * comp.width + x] > 0.02 ? CELL : 1),
   });
+}
+
+/** Grow a coverage mask outward so a region's dither cells cover its edge. */
+function dilate(mask, width, height, radius) {
+  const copy = mask.slice();
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      let best = 0;
+      for (let dy = -radius; dy <= radius; dy++) {
+        const ny = y + dy;
+        if (ny < 0 || ny >= height) continue;
+        for (let dx = -radius; dx <= radius; dx++) {
+          const nx = x + dx;
+          if (nx < 0 || nx >= width) continue;
+          const v = copy[ny * width + nx];
+          if (v > best) best = v;
+        }
+      }
+      mask[y * width + x] = best;
+    }
+  }
 }
 
 /* ------------------------------------------------------------- occlusion -- */
@@ -595,6 +782,11 @@ async function renderComposition(comp) {
   drawFloor(raster, comp, rng);
   drawAmbientSpores(raster, comp, rng);
 
+  // The clean plate: the frame with no hand and no tree. §8 requires the tree
+  // to ship separately from its background, otherwise the growth animation has
+  // nothing to reveal against.
+  const cleanPlate = raster.data.slice();
+
   // 8. The hand.
   const lightPx = { x: comp.light.x * W, y: comp.light.y * H };
   const handScalePx = comp.handScale * H * 1.6;
@@ -614,12 +806,12 @@ async function renderComposition(comp) {
     },
   };
   drawHand(raster, handOpts);
-  for (const s of handSporeField(raster, handOpts, rng, Math.round((W * H) / 260))) {
+  for (const s of handSporeField(raster, handOpts, rng, Math.round((W * H) / 4200))) {
     splat(
       raster,
       s.x,
       s.y,
-      1,
+      CELL,
       PALETTE.lichen[0],
       PALETTE.lichen[1],
       PALETTE.lichen[2],
@@ -628,18 +820,37 @@ async function renderComposition(comp) {
     );
   }
 
-  // 9. The tree, drawn from the same skeleton the browser will animate.
+  // 9. The tree is NOT drawn into the poster — it ships as a growth sprite so
+  //    the animation has a background to grow against (§8).
   const tree = generateTree({ seed: SEED });
-  const placement = drawTree(raster, comp, tree, rng, Math.round((W * H) / 20));
+  const placement = { palmX: comp.palm.x * W, palmY: comp.palm.y * H };
 
-  // 10. Post.
-  postProcess(raster, comp);
+  // The germination glow stays in the plate: it is light on the hand, not tree.
+  const glowR = comp.treeHeight * H * 0.3;
+  raster.forEach((x, y) => {
+    const d = Math.hypot(x - placement.palmX, (y - placement.palmY) * 1.45) / glowR;
+    if (d > 1) return;
+    const a = Math.pow(1 - d, 2.4) * 0.34;
+    raster.add(x, y, PALETTE.spore[0], PALETTE.spore[1], PALETTE.spore[2], a, "glow");
+  });
+
+  // 10. Post. The tree, hand and spore masks decide where the pixel grammar
+  // applies; everything else stays cinematic (§5.1).
+  const coarse = new Float32Array(W * H);
+  for (const name of ["tree", "hand", "spore"]) {
+    const m = raster.mask(name);
+    for (let i = 0; i < coarse.length; i++) if (m[i] > coarse[i]) coarse[i] = m[i];
+  }
+  dilate(coarse, W, H, 2);
+  postProcess(raster, comp, coarse);
 
   const rgba = toRGBA8(raster, { exposure: 0.98 });
   const occlusion = buildOcclusion(raster);
 
+  const sprite = renderGrowthSprite(comp, tree, SEED);
+  const cleanRgba = toRGBA8({ ...raster, data: cleanPlate }, { exposure: 0.98 });
   console.log(`  rendered ${comp.id} (${W}×${H}) in ${((Date.now() - t0) / 1000).toFixed(1)}s`);
-  return { raster, rgba, occlusion, tree, placement };
+  return { raster, rgba, cleanRgba, occlusion, tree, placement, sprite };
 }
 
 /* ----------------------------------------------------------------- write -- */
@@ -665,11 +876,29 @@ async function writeComposition(comp, result) {
    * PNG with a palette is the natural container for a 16-colour image and comes
    * out an order of magnitude smaller than the old lossy ladder.
    */
-  await base.clone().png({ compressionLevel: 9, palette: true, colours: 16 }).toFile(path.join(dir, `${posterName}.png`));
-  await base.clone().webp({ lossless: true, effort: 6 }).toFile(path.join(dir, `${posterName}.webp`));
+  const widths = [0.4, 0.6, 0.8, 1].map((f) => Math.round((W * f) / 2) * 2);
+  const avif = [];
+  const webp = [];
+  for (const w of widths) {
+    const suffix = w === W ? "" : `-${w}`;
+    const scaled = w === W ? base.clone() : base.clone().resize(w);
+    await scaled.clone().avif({ quality: 72, effort: 5 }).toFile(path.join(dir, `${posterName}${suffix}.avif`));
+    await scaled.clone().webp({ quality: 88, effort: 5 }).toFile(path.join(dir, `${posterName}${suffix}.webp`));
+    avif.push({ w, src: `/assets/hero/${comp.id}/${posterName}${suffix}.avif` });
+    webp.push({ w, src: `/assets/hero/${comp.id}/${posterName}${suffix}.webp` });
+  }
 
-  const png = `/assets/hero/${comp.id}/${posterName}.png`;
-  const webp = `/assets/hero/${comp.id}/${posterName}.webp`;
+  const sp = result.sprite;
+  await sharp(sp.buffer, {
+    raw: { width: sp.frameWidth, height: sp.frameHeight * sp.frames, channels: 4 },
+  })
+    .png({ compressionLevel: 9, palette: true })
+    .toFile(path.join(dir, `tree-growth-${comp.id}.png`));
+
+  // Clean plate: the same frame with no hand and no tree (§8).
+  await sharp(result.cleanRgba, { raw: { width: W, height: H, channels: 4 } })
+    .avif({ quality: 68, effort: 5 })
+    .toFile(path.join(dir, `hero-${comp.id}-clean-plate.avif`));
 
   // LQIP: a few pixels wide, inlined so the frame is never empty.
   const lqip = await base
@@ -709,10 +938,24 @@ async function writeComposition(comp, result) {
     media: comp.media,
     width: W,
     height: H,
-    poster: { png, webp },
+    poster: { avif, webp },
+    cleanPlate: `/assets/hero/${comp.id}/hero-${comp.id}-clean-plate.avif`,
+    /** Pre-rendered growth animation — no runtime 3D. */
+    growth: {
+      src: `/assets/hero/${comp.id}/tree-growth-${comp.id}.png`,
+      frames: sp.frames,
+      frameWidth: sp.frameWidth,
+      frameHeight: sp.frameHeight,
+      rect: sp.rect,
+    },
     lqip: `data:image/webp;base64,${lqip.toString("base64")}`,
     /** Normalised anchor the WebGL layer aligns its point cloud to. */
     palm: comp.palm,
+    /** §9: the canonical frame this composition was laid out against. */
+    referenceViewport: { width: 1536, height: 605 },
+    focalPoint: { x: 0.5566, y: 0.4463 },
+    copySafeArea: { x: 0.0521, y: 0.2727, width: 0.235, height: 0.47 },
+    metricsSafeArea: { x: 0.918, y: 0.3355, width: 0.065, height: 0.38 },
     light: comp.light,
     treeHeight: comp.treeHeight,
     safe: comp.safe,
@@ -767,23 +1010,23 @@ async function main() {
   // Social card: crop the ultrawide frame around the tree and upscale with
   // nearest neighbour, so the card stays pixel art instead of a blurred resample.
   const og = COMPOSITIONS[0];
-  await sharp(path.join(OUT, og.id, `hero-${og.id}-base.png`))
+  await sharp(path.join(OUT, og.id, `hero-${og.id}-base.webp`))
     .extract({
       left: Math.round(og.width * 0.28),
       top: 0,
       width: Math.round(og.width * 0.52),
       height: og.height,
     })
-    .resize(1200, 630, { fit: "cover", kernel: "nearest" })
-    .png({ compressionLevel: 9, palette: true, colours: 16 })
-    .toFile(path.join(OUT, "og-image-1200x630.png"));
+    .resize(1200, 630, { fit: "cover" })
+    .jpeg({ quality: 86 })
+    .toFile(path.join(OUT, "og-image-1200x630.jpg"));
 
   const manifest = {
     version: 1,
     seed: SEED,
     generatedBy: "scripts/generate-hero-assets.mjs",
     skeleton: "/assets/hero/tree-skeleton.json",
-    og: "/assets/hero/og-image-1200x630.png",
+    og: "/assets/hero/og-image-1200x630.jpg",
     compositions: entries,
     /** Palette actually present in the artwork, mirrored by tokens.css. */
     palette: {
