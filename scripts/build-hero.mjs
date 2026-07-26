@@ -296,18 +296,66 @@ function buildField(comp, forest, rng) {
       const lo = Math.max(0, Math.floor(cx - w * soft));
       const hi = Math.min(W - 1, Math.ceil(cx + w * soft));
 
+      // Which way is the light from this trunk?
+      const lightSide = Math.sign(lx - cx) || 1;
+
       for (let x = lo; x <= hi; x++) {
-        const d = Math.abs(x - cx) / w;
+        const signed = (x - cx) / w;
+        const d = Math.abs(signed);
         if (d > soft) continue;
         const p = y * W + x;
         // Far trunks dissolve into the haze; near ones have a hard edge.
         const solid = 1 - smoothstep(soft * 0.35, soft, d);
         const texture = 0.82 + 0.18 * bark(x * 0.02, y * 0.004);
-        field[p] *= 1 - solid * lerp(0.22, 0.97, near) * texture;
-        // A cold edge light on the side that faces the shafts.
-        const rim = Math.exp(-Math.abs(d - soft * 0.55) * 4.5) * (x > lx ? 1 : 0.4);
-        field[p] += rim * solid * lerp(0.16, 0.05, near);
+
+        // A trunk is a cylinder, and a cylinder has a lit side, a terminator
+        // and a dark side. Without this every trunk is one flat tone across
+        // its whole width and the grove reads as hanging curtains rather than
+        // as wood you could walk between — it is the single thing that decides
+        // whether the scene has volume.
+        const across = clamp01((signed * -lightSide) / soft * 0.5 + 0.5);
+        const round = Math.pow(across, 1.5);
+
+        // The lit side keeps more of the air behind it; the dark side takes
+        // the full silhouette.
+        const occlusion = lerp(0.22, 0.97, near) * texture * lerp(1, 0.42, round);
+        field[p] *= 1 - solid * occlusion;
+
+        // Grazing light along the lit edge, and a colder bounce on the far one
+        // so the dark side never goes completely dead.
+        const grazing = Math.pow(across, 7) * solid;
+        const bounce = Math.pow(1 - across, 5) * solid;
+        field[p] += grazing * lerp(0.3, 0.11, near) + bounce * lerp(0.05, 0.02, near);
+
         if (near > depth[p]) depth[p] = near;
+      }
+    }
+  }
+
+  /* --------------------------------------------------- the near edges --- */
+
+  // Two trunks close enough to be out of focus, hard against the frame edges.
+  // A grove only overwhelms once something in it is nearer than the viewer
+  // expects — that is what puts them inside the scene rather than in front of
+  // a picture of it.
+  for (const edge of [-1, 1]) {
+    const x0 = edge < 0 ? W * lerp(-0.02, 0.06, rng()) : W * lerp(0.94, 1.02, rng());
+    const width = W * lerp(0.06, 0.095, rng());
+    const lean = gaussian(rng, 0, 0.03);
+    for (let y = 0; y < H; y++) {
+      const along = 1 - y / H;
+      const cx = x0 + lean * along * W * 0.05;
+      const w = width * lerp(1, 0.6, Math.pow(along, 0.7));
+      const lo = Math.max(0, Math.floor(cx - w * 1.6));
+      const hi = Math.min(W - 1, Math.ceil(cx + w * 1.6));
+      for (let x = lo; x <= hi; x++) {
+        const d = Math.abs(x - cx) / w;
+        if (d > 1.6) continue;
+        const p = y * W + x;
+        // Soft-edged, because at this distance it is thoroughly defocused.
+        const solid = 1 - smoothstep(0.35, 1.6, d);
+        field[p] *= 1 - solid * 0.97;
+        depth[p] = 1;
       }
     }
   }
@@ -342,6 +390,31 @@ function buildField(comp, forest, rng) {
       const d = Math.hypot((x - lx) / (W * 0.34), (y - ly) / (H * 0.7));
       if (d > 1) continue;
       field[y * W + x] += Math.pow(1 - d, 2.4) * 0.75;
+    }
+  }
+
+  /* The floor.
+   *
+   * Without a ground plane the trunks and the tree hang in a void — the eye
+   * has nothing to stand the scene on. This is a receding plane: bright where
+   * the shafts land on it, falling off with distance from them, mottled with
+   * litter. */
+  // No horizon line: the ground has to arrive as a gradient. A hard start
+  // reads as a stage floor and cuts the frame in two.
+  for (let y = Math.floor(H * 0.6); y < H; y++) {
+    const v = y / H;
+    const onto = smoothstep(0.62, 0.94, v);
+    if (onto <= 0) continue;
+    const into = clamp01((v - 0.72) / 0.28);
+    for (let x = 0; x < W; x++) {
+      const u = x / W;
+      const p = y * W + x;
+      // Light pools where the shafts meet the floor and drains outward.
+      const pool = Math.pow(clamp01(1 - Math.abs(u - comp.light.x) * 2.4), 3);
+      const litter = 0.55 + 0.45 * canopy(x * 0.005 + 90, y * 0.014);
+      // The plane tips away: the near floor is below the light, not in it.
+      const recede = Math.pow(1 - into, 2.2);
+      field[p] = field[p] * lerp(1, 0.5, onto * into) + pool * recede * litter * onto * 0.34;
     }
   }
 

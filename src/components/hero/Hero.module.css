@@ -225,3 +225,69 @@
   animation: none;
   background-position-y: 100%;
 }
+
+/* ----------------------------------------------------------------- air -- */
+
+.motes {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  overflow: hidden;
+  /* Only where the light is. Motes in the dark are just noise. */
+  mask-image: radial-gradient(
+    ellipse 42% 85% at 55% 20%,
+    rgba(0, 0, 0, 0.95) 0%,
+    rgba(0, 0, 0, 0.5) 45%,
+    transparent 78%
+  );
+}
+
+.moteLayer {
+  position: absolute;
+  /* Taller than the frame so the loop has somewhere to travel from. */
+  inset: -60% 0 -60% 0;
+  background-repeat: repeat;
+  animation: mote-drift linear infinite;
+  will-change: transform;
+}
+
+/* Three sizes at three speeds. The far layer is nearly still, which is what
+   sells the parallax — matched speeds read as one sheet sliding. */
+.moteLayer[data-layer="far"] {
+  background-image: radial-gradient(circle at center, rgba(227, 221, 155, 0.5) 0.5px, transparent 0.9px);
+  background-size: 61px 79px;
+  animation-duration: 132s;
+  opacity: 0.5;
+}
+
+.moteLayer[data-layer="mid"] {
+  background-image: radial-gradient(circle at center, rgba(232, 221, 155, 0.62) 0.7px, transparent 1.3px);
+  background-size: 113px 143px;
+  animation-duration: 88s;
+  animation-direction: reverse;
+  opacity: 0.62;
+}
+
+.moteLayer[data-layer="near"] {
+  background-image: radial-gradient(circle at center, rgba(246, 236, 192, 0.75) 1.1px, transparent 2.1px);
+  background-size: 227px 281px;
+  animation-duration: 61s;
+  opacity: 0.5;
+}
+
+@keyframes mote-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    /* Rising and drifting sideways — warm air, not falling snow. */
+    transform: translate3d(-90px, -34%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .moteLayer {
+    animation: none;
+  }
+}
